@@ -1,7 +1,7 @@
 Language Processors
 ===================
 
-Personal work on the subject of language Processors. Contains original exercises, test cases and reference binaries (none made of these by me).
+Personal work on the subject of language Processors. Contains original exercises, test cases and reference binaries (none of these made by me).
 
 ---
 
