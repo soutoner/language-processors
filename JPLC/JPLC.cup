@@ -1,0 +1,105 @@
+// PLXC - Adrian Gonzalez Leiva
+import java_cup.runtime.*;
+
+// Code available in the grammar actions
+action code {:
+	SymbolTable variables = new SymbolTable();	    // Variables set
+:}
+
+/*Terminals */
+terminal            MAS, MENOS, POR, DIV, UMINUS;
+terminal            AP, CP, ALL, CLL;
+terminal            ASIG, PYC, COMMA;
+terminal			LOW, GRE;
+terminal			ELSE, INT, RETURN;
+terminal String		IF, WHILE;
+terminal Integer    ENTERO;
+terminal String     IDENT;
+
+/* Non terminals */
+non terminal         	lista_func, lista_sent;
+non terminal         	func, sent;
+non terminal		 	else_part, ident_list;
+non terminal Condition	cond;
+non terminal String 	exp, assig;
+
+/* Precedence */
+precedence left  COMMA;
+precedence right ASIG;
+precedence left  LOW, GRE;
+precedence left  MAS, MENOS;
+precedence left  POR, DIV;
+precedence right UMINUS;
+precedence left  ELSE;
+
+/* Grammar */
+lista_func	::= func
+			  | lista_func func
+			  ;
+
+func		::= INT IDENT:f 						{: Printer.method(f); :}
+				AP INT IDENT:p CP					{: variables.declareMainArgument(p); :} 
+				ALL lista_sent 
+				CLL									{: Printer.endMethod(); variables.purge(); :}
+              ;
+
+lista_sent	::= sent
+			  | lista_sent sent
+			  ;
+
+sent	::= RETURN exp:e PYC  						{: Printer.returnVal(e); :}
+		  | exp:e PYC								{: Printer.raw("    pop"); :}
+			// IF - ELSE (opt)		
+		  | IF:endIf AP cond:c CP 					{: Printer.label(c.trueTag); :}
+			sent				 					{: Printer.goTo(endIf);
+													   Printer.label(c.falseTag);													
+													:}
+			else_part								{: Printer.label(endIf); :}
+			// WHILE LOOP
+		  | WHILE:whileTag					       	{: Printer.label(whileTag); :}
+			AP cond:c CP							{: Printer.label(c.trueTag); :}
+			sent									{: Printer.goTo(whileTag);	
+													   Printer.label(c.falseTag);												
+													:}
+			// Anonymous block
+		  | ALL 									{:  :}
+			lista_sent
+			CLL										{:  :}  
+			// INT Declarations         
+		  | INT ident_list PYC						{:  :}
+          ;
+
+			// ELSE optional part
+else_part ::= ELSE sent
+		    |
+		    ;
+						
+			// Declarations and multiple declarations
+ident_list ::= ident_list COMMA IDENT:i				{: variables.declare(i, "0"); :}
+			 | ident_list COMMA IDENT:i ASIG exp:e1	{: variables.declare(i, e1); :}						
+			 | IDENT:i								{: variables.declare(i, "0"); :}
+			 | IDENT:i ASIG exp:e1					{: variables.declare(i, e1); :}
+			 ;
+			
+		// Expressions
+exp		::= exp:e1 MAS exp:e2		{: Printer.operation(e1, Printer.ADD, e2); :}
+   	      | exp:e1 MENOS exp:e2   	{: Printer.operation(e1, Printer.SUB, e2);  :}
+          | exp:e1 POR exp:e2     	{: Printer.operation(e1, Printer.MUL, e2);  :}
+          | exp:e1 DIV exp:e2     	{: Printer.operation(e1, Printer.DIV, e2);  :}
+	      | MENOS exp:e1          	{: Printer.operation(e1, Printer.USUB, ""); :}  %prec UMINUS
+          | AP exp:e1 CP          	{: Printer.push(e1); :}
+		  | assig:a 				{: Printer.push(a); :}
+		  | IDENT:i				  	{: Printer.load(variables.lookUp(i)); :}
+	      | ENTERO:n              	{: Printer.push(n.toString()); :}
+		  | IDENT:i AP exp:e CP     {: Printer.callFunction(i); :}
+		  ;
+
+		// Assignation (not declaration)
+assig	::= IDENT:i ASIG exp:e1 	{: Printer.assignment(variables.lookUp(i), e1); :}
+		  ;
+		
+		// Boolean conditions
+cond	::= exp:e1 LOW exp:e2		{: RESULT = Printer.condition(e1, Condition.LOW, e2); :} 
+		  | exp:e1 GRE exp:e2		{: RESULT = Printer.condition(e1, Condition.GRE, e2); :}
+		  | AP cond:c1 CP			{: RESULT = c1; :}
+		  ;

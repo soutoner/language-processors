@@ -32,6 +32,14 @@ Personal work on the subject of language Processors. Contains original exercises
 	 * **Print.java**: auxiliary Java class for printing purposes.
 	 * **SymbolTable.java**: auxiliary Java class that mantains the Symbol Table (variables scopes).
 
+ * **JPLC**: Java "ByteCode" compiler (very reduced).
+	 * **Condition**.java: auxiliary Java class for conditions.
+	 * **Print.java**: auxiliary Java class for printing purposes.
+	 * **SymbolTable.java**: auxiliary Java class that mantains the Symbol Table (variables scopes).
+	 * **jplcore.j**: auxiliary file needed by the compile process.
+	 * **jasmin.jar**: jbytecode (intermediate language) compiler.
+	 * Not implemented at all: Perfect limitation of the operational stack size.  
+
 ### Requirements
 
 * JFlex: http://jflex.de/
