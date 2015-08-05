@@ -26,8 +26,8 @@ import java_cup.runtime.*;
     "*"                  		{ return new Symbol(sym.POR); }
     "/"                  		{ return new Symbol(sym.DIV); }
     "%"                  		{ return new Symbol(sym.MOD); }
-    "++"                  	{ return new Symbol(sym.INCR); }
-    "--"                  	{ return new Symbol(sym.DECR); }
+    "++"                  		{ return new Symbol(sym.INCR); }
+    "--"                  		{ return new Symbol(sym.DECR); }
 /* Precedence */
     "("                  		{ return new Symbol(sym.AP); }
     ")"                  		{ return new Symbol(sym.CP); }
@@ -59,11 +59,11 @@ import java_cup.runtime.*;
     "int"              			{ return new Symbol(sym.INT); }
     "step"              		{ return new Symbol(sym.STEP); }
     "to"              			{ return new Symbol(sym.TO, newTag()); }
-    "downto"              	{ return new Symbol(sym.DOWNTO, newTag()); }
+    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
 /* Numbers */
     0|[1-9][0-9]*        		{ return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
 /* Identifiers */
-    [_a-zA-Z$][_a-zA-Z0-9$]*{ return new Symbol(sym.IDENT, yytext()); }
+    [_a-zA-Z$][_a-zA-Z0-9$]*		{ return new Symbol(sym.IDENT, yytext()); }
 /* Others */
     \ |\t\f              		{  }  
     [^]                  		{ /*throw new Error("Illegal character <"+yytext()+">");*/ }
