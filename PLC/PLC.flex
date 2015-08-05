@@ -55,7 +55,7 @@ import java_cup.runtime.*;
 /* Numbers */
     0|[1-9][0-9]*        		{ return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
 /* Identifiers */
-    [_a-zA-Z$][_a-zA-Z0-9$]*	{ return new Symbol(sym.IDENT, yytext()); }
+    [_a-zA-Z$][_a-zA-Z0-9$]*	        { return new Symbol(sym.IDENT, yytext()); }
 /* Others */
     \ |\t\f              		{  }  
     [^]                  		{ /*throw new Error("Illegal character <"+yytext()+">");*/ }
