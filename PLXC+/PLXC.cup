@@ -1,0 +1,211 @@
+// PLXC - Adrian Gonzalez Leiva
+import java_cup.runtime.*;
+
+// Code available in the grammar actions
+action code {:
+	SymbolTable variables = new SymbolTable();	    // Variables set
+	int actualScope = 0;							// actual scope of the variables
+	Condition forTo;								// aux variable for forto and for-downto conditions
+	int tempIdx = 0;								// idex for temporary arrays (array initialization)
+:}
+
+/*Terminals */
+terminal            MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
+terminal            AP, CP, ALL, CLL, AC, CC;
+terminal            ASIG, PYC, COMMA;
+terminal			EQ, NEQ, LOW, LOE, GRE, GOE;
+terminal			NOT, AND, OR;
+terminal			ELSE, PRINT, INT, STEP, FLOAT;
+terminal String		IF, WHILE, DO, FOR, TO, DOWNTO;
+terminal String 	IDENT, INTEGER, FLOATN;
+
+/* Non terminals */
+non terminal         	lista_sent;
+non terminal         	sent;
+non terminal		 	else_part, step_part;
+non terminal			ident_list_int, ident_list_float;
+non terminal Condition	cond;
+non terminal Variable 	exp, assig, varOrNumber, n_list;
+non terminal String		incrop;
+
+/* Precedence */
+precedence left  COMMA;
+precedence right ASIG;
+precedence left  OR;
+precedence left  AND;
+precedence left  EQ, NEQ;
+precedence left  LOW, LOE, GRE, GOE;
+precedence left  MAS, MENOS;
+precedence left  POR, DIV, MOD;
+precedence right UMINUS, PREINCR;
+precedence left  INCR, DECR;
+precedence left  ELSE;
+
+/* Grammar */
+lista_sent	::= sent      
+              | lista_sent sent 
+              ;
+
+sent	::= exp:e PYC
+			// IF - ELSE (opt)
+		  | IF:endIf AP cond:c CP 					{: Printer.label(c.trueTag); :}
+			sent				 					{: Printer.goTo(endIf);
+													   Printer.label(c.falseTag);													
+													:}
+			else_part								{: Printer.label(endIf); :}
+			// WHILE LOOP
+		  | WHILE:whileTag					       	{: Printer.label(whileTag); :}
+			AP cond:c CP							{: Printer.label(c.falseTag); :}
+			sent									{: Printer.goTo(whileTag);
+													   Printer.goTo(c.trueTag);													
+													:}
+			// DO - WHILE
+		  | DO:doTag 								{: Printer.label(doTag); :}
+			sent 
+			WHILE AP cond:c CP PYC					{: Printer.label(c.trueTag);
+													   Printer.goTo(doTag);
+													   Printer.label(c.falseTag);
+													:}
+			// FOR LOOP
+		  | FOR:forTag								
+			AP exp:e1								{: Printer.label(forTag); :}
+			PYC cond:c PYC							{: RESULT = Yylex.newTag();
+													   Printer.label(RESULT.toString());													
+													:}
+			exp:e2									{: Printer.goTo(forTag);
+													   Printer.label(c.trueTag);
+													:}
+			CP sent									{: Printer.goTo(RESULT.toString());
+													   Printer.label(c.falseTag);
+													:} 
+			// FOR TO [STEP] (pascal)
+		  | FOR:forTag assig:a TO:toTag exp:e1		{: Printer.label(forTag);
+													   forTo = Printer.condition(e1, Condition.LOW, a);
+													   Printer.label(toTag);
+													:}
+			step_part:step DO						{: if(step != null) Printer.raw("   " + a + " = " + a + " + " + step + ";"); 
+													   else Printer.raw("   " + a + " = " + a + " + 1;");
+													   Printer.goTo(forTag);
+													   Printer.label(forTo.falseTag);
+													:} 
+			ALL lista_sent CLL						{: Printer.goTo(toTag);
+													   Printer.label(forTo.trueTag);
+													:}
+			// FOR DOWNTO [STEP] (pascal)
+		  | FOR:forTag assig:a DOWNTO:toTag exp:e1  {: Printer.label(forTag);
+													   forTo = Printer.condition(a, Condition.LOW, e1);
+													   Printer.label(toTag);
+													:}
+			step_part:step DO						{: if(step != null) Printer.raw("   " + a + " = " + a + " - " + step + ";"); 
+													   else Printer.raw("   " + a + " = " + a + " - 1;");
+													   Printer.goTo(forTag);
+													   Printer.label(forTo.falseTag);
+													:} 
+			ALL lista_sent CLL						{: Printer.goTo(toTag);
+													   Printer.label(forTo.trueTag);
+													:}
+			// PRINT
+		  | PRINT AP exp:e1 CP PYC					{: Printer.print(e1.getValue()); :}
+			// Anonymous block
+		  | ALL 									{: actualScope++; :}
+			lista_sent
+			CLL										{: variables.purge(actualScope--); :}  
+			// INT Declarations         
+		  | INT ident_list_int PYC					{:  :}
+		  | FLOAT ident_list_float PYC				{:  :}
+		  | IDENT:i ASIG ALL n_list:l CLL PYC		{: tempIdx = 0; Printer.arrAssign(i, l); :}
+          ;
+
+			// ELSE optional part
+else_part ::= ELSE sent
+		    |
+		    ;
+			
+			// STEP optional part
+step_part ::= STEP exp:e							{: RESULT = e; :}
+			|										
+			;
+			
+			// Declarations and multiple declarations
+ident_list_int ::= ident_list_int COMMA IDENT:i			{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
+				 | ident_list_int COMMA IDENT:i			{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
+				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.INT), "-1", e1); :}
+				 | IDENT:i								{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
+				 | IDENT:i 								{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
+				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.INT), "-1", e1); :}
+				 | IDENT:i AC exp:n CC 					{: variables.declare(i, actualScope, Variable.INT, n.getValue()); :}
+				 | IDENT:i AC exp:n CC 					{: variables.declare(i, actualScope, Variable.INT, n.getValue()); :}
+				   ASIG ALL n_list:l CLL				{: tempIdx = 0; Printer.arrAssign(i, l); :}
+				 ;
+
+ident_list_float ::= ident_list_float COMMA IDENT:i		{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
+				 | ident_list_float COMMA IDENT:i		{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
+				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.FLOAT), "-1", e1); :}
+				 | IDENT:i								{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
+				 | IDENT:i 								{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
+				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.FLOAT), "-1", e1); :}
+				 ;
+
+n_list	::= n_list:l COMMA exp:e	{: RESULT = Printer.arrInit(l, tempIdx++, e); :}
+		  | exp:e					{: RESULT = Printer.arrInit(null, tempIdx++, e); :}
+		  ;
+			
+		// Expressions
+exp		::= exp:e1 MAS exp:e2		{: RESULT = Printer.tern(e1, Printer.ADD, e2); :}
+   	      | exp:e1 MENOS exp:e2   	{: RESULT = Printer.tern(e1, Printer.SUB, e2); :}
+          | exp:e1 POR exp:e2     	{: RESULT = Printer.tern(e1, Printer.MUL, e2); :}
+          | exp:e1 DIV exp:e2     	{: RESULT = Printer.tern(e1, Printer.DIV, e2); :}
+          | exp:e1 MOD exp:e2     	{: RESULT = Printer.mod(e1, e2); :}
+	      | MENOS exp:e1          	{: RESULT = Printer.tern(new Variable("0", Variable.INT), Printer.SUB, e1); :}  %prec UMINUS
+          | AP exp:e1 CP          	{: RESULT = e1; :}
+		  | assig:a 				{: RESULT = a; :}
+		  | varOrNumber:n			{: RESULT = n; :}
+		  | incrop:op exp:e	    	{: RESULT = Printer.preIncr(e, op); :} %prec PREINCR
+		  | exp:e incrop:op			{: RESULT = Printer.postIncr(e, op); :}
+		  | AP INT CP exp:e			{: RESULT = Printer.casting(e, Variable.INT); :}
+		  | AP FLOAT CP 
+			varOrNumber:n1 			{: RESULT = Printer.casting(n1, Variable.FLOAT); :}
+			DIV varOrNumber:n2		{: Variable e2 = Printer.casting(n2, Variable.FLOAT); 
+									   RESULT = Printer.tern(RESULT, Printer.DIV, e2);
+									:}
+		  ;
+
+varOrNumber ::= IDENT:i					{: RESULT = variables.lookUp(i, actualScope); :}
+		  | IDENT:i AC exp:n CC 		{: Variable var = variables.lookUp(i, actualScope);
+										   Printer.rangeCheck(var, n);  
+										   RESULT = Printer.arrayToTmp(var, n.getValue()); 
+										:}
+	      | INTEGER:n              		{: RESULT = new Variable(n, Variable.INT); :}
+		  | FLOATN:n					{: RESULT = new Variable(n, Variable.FLOAT); :}
+		  ;
+
+		// Assignation (not declaration)
+assig	::= IDENT:i ASIG exp:e1 					{: RESULT = Printer.assignment(variables.lookUp(i, actualScope), "-1", e1); :}
+		  | IDENT:i AC exp:n CC ASIG exp:e1 		{: RESULT = Printer.assignment(variables.lookUp(i, actualScope), n.getValue(), e1); :}
+		  ;
+			
+		// Increment or decrement
+incrop 	::= INCR					{: RESULT = "++"; :}
+		  | DECR					{: RESULT = "--"; :}
+		  ;
+		
+		// Boolean conditions
+cond	::= exp:e1 EQ exp:e2		{: RESULT = Printer.condition(e1, Condition.EQ, e2); :}
+		  | exp:e1 NEQ exp:e2		{: RESULT = Printer.condition(e1, Condition.NEQ, e2); :}
+		  | exp:e1 LOW exp:e2		{: RESULT = Printer.condition(e1, Condition.LOW, e2); :} 
+		  | exp:e1 LOE exp:e2		{: RESULT = Printer.condition(e1, Condition.LOE, e2); :}
+		  | exp:e1 GRE exp:e2		{: RESULT = Printer.condition(e1, Condition.GRE, e2); :}
+		  | exp:e1 GOE exp:e2		{: RESULT = Printer.condition(e1, Condition.GOE, e2); :}
+		  | NOT cond:c1				{: RESULT = c1.not(); :}
+		  | cond:c1 AND 			{: Printer.label(c1.trueTag); :}
+			cond:c2		  			{: Printer.label(c1.falseTag);
+									   Printer.goTo(c2.trueTag);
+									   RESULT = c2;									
+									:}
+		  | cond:c1 OR 				{: Printer.label(c1.falseTag); :}
+			cond:c2		  			{: Printer.label(c1.trueTag);
+									   Printer.goTo(c2.falseTag);
+									   RESULT = c2;									
+									:}
+		  | AP cond:c1 CP			{: RESULT = c1; :}
+		  ;
