@@ -1,4 +1,4 @@
-public class Print {
+public class Printer {
 	/* Temporary variables */
 	private static int actualTmp = 0;
 	
