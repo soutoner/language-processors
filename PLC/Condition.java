@@ -15,7 +15,7 @@ public class Condition {
 		this.falseTag = Yylex.newTag();
 	}
 
-	public static Condition condition(String e1, int type, String e2){
+	public static Condition condition(Object e1, int type, Object e2){
 		Condition tags = new Condition();
 		
 		switch(type){
