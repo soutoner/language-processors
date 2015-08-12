@@ -46,5 +46,19 @@ Personal work on the subject of language Processors. Contains original exercises
 * CUP: http://www2.cs.tum.edu/projects/cup/
 * Java: http://www.java.com/en/
 
+### How to run PL*C projects
+
+`Choose one of the project` e.g. PLC
+
+`Choose the correct binaries`
+
+Put inside the folder of the project the necessary binary files that goes with your architecture. `ctd` binaries are inside `/ctd-bin`, `pl*c` are in `/pl*c/pl*c-bin`.
+
+`Change directory to the project (if not done)` e.g. `cd PLC`
+
+`./compile.sh`
+
+`./runtest.sh`
+
 >**Note:** credits to the University of Málaga for original exercises, test cases and reference binaries. Material uploaded for educational purposes.
 
