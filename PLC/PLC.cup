@@ -34,40 +34,40 @@ listaSent ::= sent
 
 sent ::= exp:e PYC
 	// IF - ELSE (optional)
-       | IF:endIf AP cond:c CP 					{: Printer.label(c.trueTag); :}
-	 sent				 			{: Printer.goTo(endIf);
-								   Printer.label(c.falseTag);													
-								:}
-	 elsePart						{: Printer.label(endIf); :}
+       | IF:endIf AP cond:c CP		{: Printer.label(c.trueTag); :}
+	 sent				{: Printer.goTo(endIf);
+					   Printer.label(c.falseTag);													
+					:}
+	 elsePart			{: Printer.label(endIf); :}
 	 // WHILE 
-       | WHILE:whileTag					       	{: Printer.label(whileTag); :}
-	 AP cond:c CP						{: Printer.label(c.falseTag); :}
-	 sent							{: Printer.goTo(whileTag);
-								   Printer.goTo(c.trueTag);													
-								:}
+       | WHILE:whileTag		       	{: Printer.label(whileTag); :}
+	 AP cond:c CP			{: Printer.label(c.falseTag); :}
+	 sent				{: Printer.goTo(whileTag);
+					   Printer.goTo(c.trueTag);													
+					:}
        	// DO WHILE 
-       | DO:doTag						{: Printer.label(doTag); :}
+       | DO:doTag			{: Printer.label(doTag); :}
 	 sent 
-	 WHILE AP cond:c CP PYC					{: Printer.label(c.trueTag);
-								   Printer.goTo(doTag);
-								   Printer.label(c.falseTag);
-								:}
+	 WHILE AP cond:c CP PYC		{: Printer.label(c.trueTag);
+					   Printer.goTo(doTag);
+					   Printer.label(c.falseTag);
+					:}
        	// FOR
        | FOR:forTag						
-	 AP exp:e1						{: Printer.label(forTag); :}
-	 PYC cond:c PYC						{: RESULT = Yylex.newTag();
-								   Printer.label(RESULT.toString());													
-								:}
-	 exp:e2							{: Printer.goTo(forTag);
-								   Printer.label(c.trueTag);
-								:}
-	 CP sent						{: Printer.goTo(RESULT.toString());
-								   Printer.label(c.falseTag);
-								:} 
+	 AP exp:e1			{: Printer.label(forTag); :}
+	 PYC cond:c PYC			{: RESULT = Yylex.newTag();
+					   Printer.label(RESULT.toString());													
+					:}
+	 exp:e2				{: Printer.goTo(forTag);
+					   Printer.label(c.trueTag);
+					:}
+	 CP sent			{: Printer.goTo(RESULT.toString());
+					   Printer.label(c.falseTag);
+					:} 
        	// PRINT
-       | PRINT AP exp:e1 CP PYC					{: Printer.print(e1); :}
+       | PRINT AP exp:e1 CP PYC		{: Printer.print(e1); :}
        	// Anonymous block
-       | ALL listaSent CLL					{:  :}           
+       | ALL listaSent CLL		{:  :}           
        ;
 
 elsePart ::= ELSE sent
