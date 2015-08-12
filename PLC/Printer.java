@@ -6,7 +6,7 @@ public class Printer {
 		return "t"+(actualTmp++);
 	}
 
-	public static String assignment(String ident, String exp) {
+	public static String assignment(String ident, Object exp) {
 		PLC.out.println("   " + ident + " = " + exp + " ;");
 		return ident;
 	}
@@ -17,7 +17,7 @@ public class Printer {
 		return tmp;
 	}
 
-	public static void print(String exp) {
+	public static void print(Object exp) {
 		PLC.out.println("   print " + exp + " ;");	
 	}
 
