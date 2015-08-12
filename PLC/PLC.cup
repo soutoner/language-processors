@@ -74,15 +74,15 @@ elsePart ::= ELSE sent
 	   |
 	   ;
 
-exp ::= exp:e1 MAS exp:e2	{: RESULT = Printer.tern(e1 + " + " + e2); :}
-      | exp:e1 MENOS exp:e2   	{: RESULT = Printer.tern(e1 + " - " + e2); :}
-      | exp:e1 POR exp:e2     	{: RESULT = Printer.tern(e1 + " * " + e2); :}
-      | exp:e1 DIV exp:e2     	{: RESULT = Printer.tern(e1 + " / " + e2); :}
-      | MENOS exp:e1          	{: RESULT = Printer.tern("0 - " + e1); :}  %prec UMINUS
-      | AP exp:e1 CP          	{: RESULT = e1; :}
-      | IDENT:i ASIG exp:e1 	{: RESULT = Printer.assignment(i, e1); :}
-      | IDENT:i			{: RESULT = i; :}
-      | ENTERO:n              	{: RESULT = n; :}
+exp ::= exp:e1 MAS exp:e2		{: RESULT = Printer.tern(e1 + " + " + e2); :}
+      | exp:e1 MENOS exp:e2   		{: RESULT = Printer.tern(e1 + " - " + e2); :}
+      | exp:e1 POR exp:e2     		{: RESULT = Printer.tern(e1 + " * " + e2); :}
+      | exp:e1 DIV exp:e2     		{: RESULT = Printer.tern(e1 + " / " + e2); :}
+      | MENOS exp:e1          		{: RESULT = Printer.tern("0 - " + e1); :}  %prec UMINUS
+      | AP exp:e1 CP          		{: RESULT = e1; :}
+      | IDENT:i ASIG exp:e1 		{: RESULT = Printer.assignment(i, e1); :}
+      | IDENT:i				{: RESULT = i; :}
+      | ENTERO:n              		{: RESULT = n; :}
       ;
 
 cond ::= exp:e1 EQ exp:e2		{: RESULT = Condition.condition(e1, Condition.EQ, e2); :}
