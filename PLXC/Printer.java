@@ -41,15 +41,19 @@ public class Printer {
 	}
 
 	public static void error(String err) {
-		out.println("error;");
-		out.println("# " + err);
-		out.println("halt;");
+		out.println("   error;");
+		out.println("   # " + err);
+		out.println("   halt;");
+	}
+
+	public static void error() {
+		out.println("   error;");
+		out.println("   halt;");
 	}
 
 	public static String postIncr(String ident, String op){
 		if(!ident.matches("[_a-zA-Z$][_a-zA-Z0-9$]*") || ident.matches("t[0-9]+")){ // if it isnt and identifier throw error
-			out.println("error;"); 
-			out.println("halt;"); 
+			error();
 		}
 		String tmp = newTmp();
 		out.println("   " + tmp + " = " + ident + ";");
@@ -60,8 +64,7 @@ public class Printer {
 
 	public static String preIncr(String ident, String op){
 		if(!ident.matches("[_a-zA-Z$][_a-zA-Z0-9$]*") || ident.matches("t[0-9]+")){ // if it isnt and identifier throw error
-			out.println("error;"); 
-			out.println("halt;"); 
+			error();
 		}
 		if(op.equals("++")) out.println("   " + ident + " = " + ident + " + 1;");
 		else out.println("   " + ident + " = " + ident + " - 1;");

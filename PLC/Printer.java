@@ -1,32 +1,83 @@
 public class Printer {
-	/* Temporary variables */
-	private static int actualTmp = 0;
-	
-	private static String newTmp() {
+
+	private static int actualTmp = 0; 	// Temporary variables
+	private java.io.PrintStream out;	// Print stream
+
+	public Printer(){
+		this.out = PLC.out;
+	}
+
+	// Creates temporary variables (String tag)
+	private String newTmp() {
 		return "t"+(actualTmp++);
 	}
 
-	public static String assignment(String ident, Object exp) {
-		PLC.out.println("   " + ident + " = " + exp + " ;");
+	// Assignment
+	public String assignment(String ident, Object exp) {
+		out.println("   " + ident + " = " + exp + " ;");
 		return ident;
 	}
 
-	public static String tern(String operation) {
+	// Tern (arithmetic operations)
+	public String tern(String operation) {
 		String tmp = newTmp();		
-		PLC.out.println("   " + tmp + " = " + operation + " ;");
+		out.println("   " + tmp + " = " + operation + " ;");
 		return tmp;
 	}
 
-	public static void print(Object exp) {
-		PLC.out.println("   print " + exp + " ;");	
+	// Print
+	public void print(Object exp) {
+		out.println("   print " + exp + " ;");
 	}
 
-	public static void goTo(String label) {
-		PLC.out.println("   goto " + label + " ;");
+	// Goto
+	public void goTo(String label) {
+		out.println("   goto " + label + " ;");
 	}
 
-	public static void label(String tag) {
-		PLC.out.println(tag + ":");
+	// Label
+	public void label(String tag) {
+		out.println(tag + ":");
+	}
+
+	// Conditions
+	public Condition condition(Object e1, int type, Object e2){
+		Condition tags = new Condition();
+
+		switch(type){
+			// If a == b goto trueTag, else, goto falseTag
+			case Condition.EQ:
+				out.println("   if (" + e1 + " == " + e2 +") goto " + tags.trueTag + " ;");
+				out.println("   goto " + tags.falseTag + " ;");
+				break;
+			// If a == b goto falseTag, else, goto trueTag
+			case Condition.NEQ:
+				out.println("   if (" + e1 + " == " + e2 +") goto " + tags.falseTag + " ;");
+				out.println("   goto " + tags.trueTag + " ;");
+				break;
+			// If a < b goto trueTag, else, goto falseTag
+			case Condition.LOW:
+				out.println("   if (" + e1 + " < " + e2 +") goto " + tags.trueTag + " ;");
+				out.println("   goto " + tags.falseTag + " ;");
+				break;
+			// If b < a goto falseTag, else, goto trueTag
+			case Condition.LOE:
+				out.println("   if (" + e2 + " < " + e1 +") goto " + tags.falseTag + " ;");
+				out.println("   goto " + tags.trueTag + " ;");
+				break;
+			// If b < a goto trueTag, else, goto falseTag
+			case Condition.GRE:
+				out.println("   if (" + e2 + " < " + e1 +") goto " + tags.trueTag + " ;");
+				out.println("   goto " + tags.falseTag + " ;");
+				break;
+			// If (a < b) goto falseTag, else, goto trueTag
+			case Condition.GOE:
+				out.println("   if (" + e1 + " < " + e2 +") goto " + tags.falseTag + " ;");
+				out.println("   goto " + tags.trueTag + " ;");
+				break;
+		}
+
+		return tags;
 	}
 
 }

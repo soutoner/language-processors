@@ -25,16 +25,16 @@ Personal work on the subject of language Processors. Contains original exercises
 
  * **PLC**:  PL compiler.
 	 * **Condition**.java: auxiliary Java class for conditions.
-	 * **Print.java**: auxiliary Java class for printing purposes.
+	 * **Printer.java**: auxiliary Java class for printing purposes.
 	 
  * **PLXC**: PL+ compiler (support more features).
 	 * **Condition**.java: auxiliary Java class for conditions.
-	 * **Print.java**: auxiliary Java class for printing purposes.
+	 * **Printer.java**: auxiliary Java class for printing purposes.
 	 * **SymbolTable.java**: auxiliary Java class that mantains the Symbol Table (variables scopes).
 
  * **JPLC**: Java "ByteCode" compiler (very reduced).
 	 * **Condition**.java: auxiliary Java class for conditions.
-	 * **Print.java**: auxiliary Java class for printing purposes.
+	 * **Printer.java**: auxiliary Java class for printing purposes.
 	 * **SymbolTable.java**: auxiliary Java class that mantains the Symbol Table (variables scopes).
 	 * **jplcore.j**: auxiliary file needed by the compile process.
 	 * **jasmin.jar**: jbytecode (intermediate language) compiler.
@@ -48,17 +48,21 @@ Personal work on the subject of language Processors. Contains original exercises
 
 ### How to run PL*C projects
 
-`Choose one of the project` e.g. PLC
+#### Choose one of the project
 
-`Choose the correct binaries`
+e.g. PLC
+
+#### Choose the correct binaries
 
 Put inside the folder of the project the necessary binary files that goes with your architecture. `ctd` binaries are inside `/ctd-bin`, `pl*c` are in `/pl*c/pl*c-bin`.
 
-`Change directory to the project (if not done)` e.g. `cd PLC`
+#### Change directory to the project (if not done)
 
-`./compile.sh`
+e.g. `cd PLC`
 
-`./runtest.sh`
+#### `./compile.sh`
+
+#### `./runtest.sh`
 
 >**Note:** credits to the University of Málaga for original exercises, test cases and reference binaries. Material uploaded for educational purposes.
 
