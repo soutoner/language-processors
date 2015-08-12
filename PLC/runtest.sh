@@ -8,9 +8,9 @@ do
 	
 	if [[ $solution == $exercise ]]
 	then
-		echo "${count}. Ok!";
+		echo "${count}. `basename $filename` - Ok!";
 	else 
-		echo "${count}. ERROR! Expected: ${solution} Given: ${exercise}";
+		echo "${count}. `basename $filename` - ERROR! Expected: ${solution} Given: ${exercise}";
 	fi
 
 	count=$((count+1));
