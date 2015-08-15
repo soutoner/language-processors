@@ -4,7 +4,7 @@
 # $2 counter if any
 correct_exercise () {
 	solution=`./plxc $1 | ./ctd`;
-	exercise=`java PLXC $1 | ./ctd`;
+	exercise=`java -cp .:../lib/java-cup-11b-runtime.jar PLXC $1 | ./ctd`;
 	name=$(basename "$1")
 
 	if [[ $solution == $exercise ]]

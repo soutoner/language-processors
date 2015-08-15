@@ -1,136 +1,146 @@
+import java.lang.Double;
+import java.lang.Runtime;
+import java.lang.RuntimeException;
 import java.util.*;
+import java.util.ArrayList;
 
 public class SymbolTable {
-	// Size of the ocurrence array and indexes [scope, type, size (if array, -1 if not)]
-	public final static int ARRAY_SIZE = 3;
-	public final static int ARR_SCOPE = 0;
-	public final static int ARR_TYPE = 1;
-	public final static int ARR_SIZE = 2;
-	
-	// Map of identifier -> list of ocurrences
-	public static Map<String, List<int []>> symTable;
 
-	public SymbolTable() {
-		symTable = new HashMap<String, List<int []>>();	
-	}
+    // Ocurrence array indexes
+    public final static int OCURRENCE_ARR_SIZE = 2;
+    public final static int IDX_SCOPE = 0;
+    public final static int IDX_TYPE = 1;
 
-	public void declare(String id, int actualScope, int type, String arrSize){
-		int size = -1;
-		try{
-			size = Integer.valueOf(arrSize);
-		} catch (NumberFormatException e) { // delcaration with identifier as index - error
-			Printer.error("Identifier inside declaration of an array");
-		} 
-		List<int []> occurrences = symTable.get(id); // ocurrences of an identifier
+    // Enum for variable types
+    public final static int INT = 20;
+    public final static int FLOAT = 21;
 
-		if(occurrences == null){ // we need to add it to the symbol table
-			symTable.put(id, new ArrayList<int []>());
-			int [] ocurrence = new int[ARRAY_SIZE];
-			// SCOPE
-			ocurrence[ARR_SCOPE] = actualScope;
-			// TYPE
-			ocurrence[ARR_TYPE] = type;
-			// SIZE (-1 if not array)
-			ocurrence[ARR_SIZE] = size;
-			symTable.get(id).add(ocurrence);
-		} else { // identifier is declared, fetch first occurrence
-			int [] closerScope = occurrences.get(0);
+    private Map<String, List<int []>> symTable;    // Map of identifier -> list of ocurrences [scope, type]
+    private Printer out;                            // Variable for printing
 
-			if(closerScope[ARR_SCOPE] == actualScope ){ // multiple declaration of variable, throw error
-				Printer.error("variable ya declarada");
-			} else if (closerScope[ARR_SCOPE] < actualScope){ // not declared in this scope so add occurrence at beginning
-				int [] ocurrence = new int[ARRAY_SIZE];
-				// SCOPE
-				ocurrence[ARR_SCOPE] = actualScope;
-				// TYPE
-				ocurrence[ARR_TYPE] = type;
-				// SIZE (-1 if not array)
-				ocurrence[ARR_SIZE] = size;
-				occurrences.add(0, ocurrence);
-			} else {
-				throw new RuntimeException("Purge is not working correctly");			
-			}
-		}
-		printSymTable(); // DEBUG
-	}
+    public SymbolTable(){
+        symTable = new HashMap<String, List<int []>>();
+        out = new Printer();
+    }
 
+    // Declare variables into Symbol Table
+    public void declare(String id, int actualScope, int type){
+        List<int []> occurrences = symTable.get(id); // ocurrences of an identifier
 
-	public Variable lookUp(String id, int actualScope){
-		List<int []> occurrences = symTable.get(id); // ocurrences of an identifier
-		
-		if(occurrences == null){ // variable non declared, throw error
-			Printer.error("variable no declarada");
-			return null;
-		} else { // identifier is declared, fetch closer occurrence
-			String ident = id;
-			if(occurrences.size() > 1 ) // variable declared more than one, append suffix
-				ident += ("_" + occurrences.get(0)[ARR_SCOPE]);
-			return new Variable(ident, occurrences.get(0)[ARR_TYPE], occurrences.get(0)[ARR_SIZE]);
-		}
-	}
+        if(occurrences == null){ // we need to add it to the symbol table
+            symTable.put(id, new ArrayList<int[]>());
+            symTable.get(id).add(createOcurrence(actualScope, type));
+        } else { // identifier is declared, fetch first occurrence
+            int [] closerScope = occurrences.get(0);
 
-	public void purge(int actualScope){
-		Iterator it = symTable.entrySet().iterator();
-		
-		while(it.hasNext()){
-			Map.Entry<String, List<int []>> entry = (Map.Entry<String, List<int []>>) it.next();		
+            if(closerScope[IDX_SCOPE] == actualScope ){ // multiple declaration of variable, throw error
+                out.error("variable \'" + id + "\' ya declarada");
+            } else if (closerScope[IDX_SCOPE] < actualScope){ // not declared in this scope so add occurrence at beginning
+                occurrences.add(0, createOcurrence(actualScope, type));
+            } else {
+                throw new RuntimeException("Purge is not working correctly");
+            }
+        }
 
-			List<int []> occurrences = entry.getValue();
-			int [] closerScope = occurrences.get(0); // get occurrences of a identifier
+        // TODO: remove this
+        // printSymTable();
+    }
 
-			if(closerScope[ARR_SCOPE] == actualScope){ // occurrence that belong to the actual scope
-				occurrences.remove(0); // so purge it
-				if(occurrences.size() == 0){ // if there is no more occurrences, remove the entry
-					it.remove();
-				}
-			}
-		}
-	}
+    // Create an ocurrence array for a variable [scope, type]
+    private int [] createOcurrence(int actualScope, int type){
+        int [] ocurrence = new int[OCURRENCE_ARR_SIZE];
+        ocurrence[IDX_SCOPE] = actualScope;
+        ocurrence[IDX_TYPE] = type;
+        return ocurrence;
+    }
 
-	public static boolean hasTypeOf(String id, int type){
-		List<int []> occurrences = symTable.get(id); // ocurrences of an identifier
-		
-		if(occurrences == null) // variable non declared, no type
-			return false;
-		else  // identifier is declared, fetch closer occurrence
-			return occurrences.get(0)[ARR_TYPE] == type;
-	}
+    // Check if an variable was previously declared or not
+    public String lookUp(String id){
+        List<int []> occurrences = symTable.get(id); // ocurrences of an identifier
 
-	/*
-	 *	DEBUGGING
-	 */
+        if(occurrences == null){ // variable non declared, throw error
+            out.error("variable \'" + id + "\' no declarada");
+            return null;
+        } else { // identifier is declared, fetch closer occurrence
+            if(occurrences.size() > 1 ){ // variable declared more than one, append suffix
+                return id + "_" + occurrences.get(0)[IDX_SCOPE];
+            } else {
+                return id;
+            }
+        }
+    }
 
-	public static void printSymTable(){
-		System.out.println("# --------------------");
-		System.out.println("# ID\tSCOPE\tTYPE");
-		System.out.println("# --------------------");
+    // Purge the symbol table when a scope is left
+    public void purge(int actualScope){
+        Iterator it = symTable.entrySet().iterator();
 
-		Iterator it = symTable.entrySet().iterator();
-		
-		while(it.hasNext()){
-			Map.Entry<String, List<int []>> entry = (Map.Entry<String, List<int []>>) it.next();		
+        while(it.hasNext()){
+            Map.Entry<String, List<int []>> entry = (Map.Entry<String, List<int []>>) it.next();
 
-			List<int []> occurrences = entry.getValue();
-			
-			for(int i = 0; i < occurrences.size(); i++){
-				int [] scope = occurrences.get(i); // get occurrences of a identifier
-				System.out.println("# " + entry.getKey() + "\t" + scope[ARR_SCOPE] + "\t" + printType(scope[ARR_TYPE], scope[ARR_SIZE]));
-			}
-		}
-	}
+            List<int []> occurrences = entry.getValue();
+            int [] closerScope = occurrences.get(0); // get occurrences of a identifier
 
-	private static String printType(int type, int size){
-		String ret = "";
-		switch(type){
-			case Variable.INT:
-				ret += "INT";
-				break;
-			case Variable.FLOAT:
-				ret += "FLOAT";
-				break;
-		}
-		if(size > 0) ret += "[" + size + "]";
-		return ret;
-	}
+            if(closerScope[IDX_SCOPE] == actualScope){ // occurrence that belong to the actual scope
+                occurrences.remove(0); // so purge it
+                if(occurrences.size() == 0){ // if there is no more occurrences, remove the entry
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    // GETTERS
+
+    // Returns the type of a variable
+    public int typeOf(Object o){
+        if(o instanceof Integer) { // Integer
+            return INT;
+        } else if(o instanceof Double) { // Double
+            return FLOAT;
+        } else { // String
+            if(symTable.get(o) == null){ // Tmp
+                if(((String) o).charAt(0) == 't'){
+                    return INT;
+                } else {
+                    return FLOAT;
+                }
+            } else { // Ident, fetch closer ocurrence type
+                return symTable.get(o).get(0)[IDX_TYPE];
+            }
+        }
+    }
+
+    /**
+     * DEBUGGING
+     */
+
+    private void printSymTable(){
+        out.raw("# --------------------");
+        out.raw("# ID\tSCOPE\tTYPE");
+        out.raw("# --------------------");
+
+        Iterator it = symTable.entrySet().iterator();
+
+        while(it.hasNext()){
+            Map.Entry<String, List<int []>> entry = (Map.Entry<String, List<int []>>) it.next();
+
+            List<int []> occurrences = entry.getValue();
+
+            for(int i = 0; i < occurrences.size(); i++){
+                int [] ocurrence = occurrences.get(i); // get occurrences of a identifier
+                out.raw("# " + entry.getKey() + "\t" + ocurrence[IDX_SCOPE] + "\t" + printType(ocurrence[IDX_TYPE]));
+            }
+        }
+    }
+
+    private String printType(int type){
+        switch(type){
+            case SymbolTable.INT:
+                return "INT";
+            case SymbolTable.FLOAT:
+                return "FLOAT";
+        }
+        return null;
+    }
 
 }

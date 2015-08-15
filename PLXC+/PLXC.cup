@@ -1,211 +1,243 @@
-// PLXC - Adrian Gonzalez Leiva
+// PLC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
 
 // Code available in the grammar actions
 action code {:
-	SymbolTable variables = new SymbolTable();	    // Variables set
-	int actualScope = 0;							// actual scope of the variables
-	Condition forTo;								// aux variable for forto and for-downto conditions
-	int tempIdx = 0;								// idex for temporary arrays (array initialization)
+	SymbolTable symTable = new SymbolTable();   // Symbol table
+    Printer printer = new Printer(symTable);    // Variable for printing
+	int actualScope = 0;                        // Aux variable for scope
 :}
 
-/*Terminals */
-terminal            MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
-terminal            AP, CP, ALL, CLL, AC, CC;
-terminal            ASIG, PYC, COMMA;
-terminal			EQ, NEQ, LOW, LOE, GRE, GOE;
-terminal			NOT, AND, OR;
-terminal			ELSE, PRINT, INT, STEP, FLOAT;
-terminal String		IF, WHILE, DO, FOR, TO, DOWNTO;
-terminal String 	IDENT, INTEGER, FLOATN;
+// Override error reporting method
+parser code {:
+    @Override
+    public void report_error(String message, Object info){ // Syntax error handling message
+        new Printer().error(message);
+    }
+:}
+
+/* Terminals */
+terminal            	MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
+terminal            	AP, CP, ALL, CLL;
+terminal            	ASIG, PYC, COMA;
+terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
+terminal				NOT, AND, OR;
+terminal				ELSE, PRINT, STEP;
+terminal                INT, FLOAT;
+terminal String			IF, WHILE, DO, FOR,TO, DOWNTO;
+terminal String     	IDENT;
+terminal Integer    	ENTERO;
+terminal Double    	    REAL;
 
 /* Non terminals */
-non terminal         	lista_sent;
-non terminal         	sent;
-non terminal		 	else_part, step_part;
-non terminal			ident_list_int, ident_list_float;
+non terminal         	sent, listaSent;
+non terminal         	declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
+non terminal            whileLoop, doWhileLoop, forLoop, forPascal;
+non terminal            forTo, forDownTo;
+non terminal			ifElseSent, elsePart;
+non terminal String     incrDecrOp;
 non terminal Condition	cond;
-non terminal Variable 	exp, assig, varOrNumber, n_list;
-non terminal String		incrop;
+non terminal Object 	exp, prePostIncrDecr, stepPart, casting, varOrNumber;
 
 /* Precedence */
-precedence left  COMMA;
-precedence right ASIG;
-precedence left  OR;
-precedence left  AND;
-precedence left  EQ, NEQ;
-precedence left  LOW, LOE, GRE, GOE;
-precedence left  MAS, MENOS;
-precedence left  POR, DIV, MOD;
-precedence right UMINUS, PREINCR;
-precedence left  INCR, DECR;
-precedence left  ELSE;
+precedence left         COMA;
+precedence right        ASIG;
+precedence left         OR;
+precedence left         AND;
+precedence left         EQ, NEQ;
+precedence left         LOW, LOE, GRE, GOE;
+precedence left         MAS, MENOS;
+precedence left         POR, DIV, MOD;
+precedence right        UMINUS, PREINCR;
+precedence left         INCR, DECR;
+precedence left         ELSE;
 
 /* Grammar */
-lista_sent	::= sent      
-              | lista_sent sent 
-              ;
+listaSent ::= sent      
+            | listaSent sent 
+            ;
 
-sent	::= exp:e PYC
-			// IF - ELSE (opt)
-		  | IF:endIf AP cond:c CP 					{: Printer.label(c.trueTag); :}
-			sent				 					{: Printer.goTo(endIf);
-													   Printer.label(c.falseTag);													
-													:}
-			else_part								{: Printer.label(endIf); :}
-			// WHILE LOOP
-		  | WHILE:whileTag					       	{: Printer.label(whileTag); :}
-			AP cond:c CP							{: Printer.label(c.falseTag); :}
-			sent									{: Printer.goTo(whileTag);
-													   Printer.goTo(c.trueTag);													
-													:}
-			// DO - WHILE
-		  | DO:doTag 								{: Printer.label(doTag); :}
-			sent 
-			WHILE AP cond:c CP PYC					{: Printer.label(c.trueTag);
-													   Printer.goTo(doTag);
-													   Printer.label(c.falseTag);
-													:}
-			// FOR LOOP
-		  | FOR:forTag								
-			AP exp:e1								{: Printer.label(forTag); :}
-			PYC cond:c PYC							{: RESULT = Yylex.newTag();
-													   Printer.label(RESULT.toString());													
-													:}
-			exp:e2									{: Printer.goTo(forTag);
-													   Printer.label(c.trueTag);
-													:}
-			CP sent									{: Printer.goTo(RESULT.toString());
-													   Printer.label(c.falseTag);
-													:} 
-			// FOR TO [STEP] (pascal)
-		  | FOR:forTag assig:a TO:toTag exp:e1		{: Printer.label(forTag);
-													   forTo = Printer.condition(e1, Condition.LOW, a);
-													   Printer.label(toTag);
-													:}
-			step_part:step DO						{: if(step != null) Printer.raw("   " + a + " = " + a + " + " + step + ";"); 
-													   else Printer.raw("   " + a + " = " + a + " + 1;");
-													   Printer.goTo(forTag);
-													   Printer.label(forTo.falseTag);
-													:} 
-			ALL lista_sent CLL						{: Printer.goTo(toTag);
-													   Printer.label(forTo.trueTag);
-													:}
-			// FOR DOWNTO [STEP] (pascal)
-		  | FOR:forTag assig:a DOWNTO:toTag exp:e1  {: Printer.label(forTag);
-													   forTo = Printer.condition(a, Condition.LOW, e1);
-													   Printer.label(toTag);
-													:}
-			step_part:step DO						{: if(step != null) Printer.raw("   " + a + " = " + a + " - " + step + ";"); 
-													   else Printer.raw("   " + a + " = " + a + " - 1;");
-													   Printer.goTo(forTag);
-													   Printer.label(forTo.falseTag);
-													:} 
-			ALL lista_sent CLL						{: Printer.goTo(toTag);
-													   Printer.label(forTo.trueTag);
-													:}
-			// PRINT
-		  | PRINT AP exp:e1 CP PYC					{: Printer.print(e1.getValue()); :}
-			// Anonymous block
-		  | ALL 									{: actualScope++; :}
-			lista_sent
-			CLL										{: variables.purge(actualScope--); :}  
-			// INT Declarations         
-		  | INT ident_list_int PYC					{:  :}
-		  | FLOAT ident_list_float PYC				{:  :}
-		  | IDENT:i ASIG ALL n_list:l CLL PYC		{: tempIdx = 0; Printer.arrAssign(i, l); :}
+sent ::= exp:e PYC                       {: :}
+       | ifElseSent                      {: :}
+       | whileLoop                       {: :}
+       | doWhileLoop                     {: :}
+       | forLoop                         {: :}
+       | forPascal                       {: :}
+       | declaSent                       {: :}
+        // PRINT
+       | PRINT AP exp:e1 CP PYC		     {: printer.print(e1); :}
+        // Anonymous block
+       | ALL                             {: actualScope++; :}
+         listaSent CLL		             {: symTable.purge(actualScope--); :}
+       ;
+
+    // DECLARATIONS
+declaSent ::= INT listaDeclInt PYC       {: :}
+            | FLOAT listaDeclFloat PYC   {: :}
+            ;
+
+    // INT declarations
+listaDeclInt ::= listaDeclInt COMA declInt  {: :}
+               | declInt                    {: :}
+               ;
+
+declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, SymbolTable.INT); :}
+          | IDENT:i ASIG exp:e          {: symTable.declare(i, actualScope, SymbolTable.INT); printer.assignment(symTable.lookUp(i), e); :}
           ;
 
-			// ELSE optional part
-else_part ::= ELSE sent
-		    |
-		    ;
-			
-			// STEP optional part
-step_part ::= STEP exp:e							{: RESULT = e; :}
-			|										
-			;
-			
-			// Declarations and multiple declarations
-ident_list_int ::= ident_list_int COMMA IDENT:i			{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
-				 | ident_list_int COMMA IDENT:i			{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
-				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.INT), "-1", e1); :}
-				 | IDENT:i								{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
-				 | IDENT:i 								{: variables.declare(i, actualScope, Variable.INT, "-1"); :}
-				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.INT), "-1", e1); :}
-				 | IDENT:i AC exp:n CC 					{: variables.declare(i, actualScope, Variable.INT, n.getValue()); :}
-				 | IDENT:i AC exp:n CC 					{: variables.declare(i, actualScope, Variable.INT, n.getValue()); :}
-				   ASIG ALL n_list:l CLL				{: tempIdx = 0; Printer.arrAssign(i, l); :}
-				 ;
+    // FLOAT declarations
+listaDeclFloat ::= listaDeclFloat COMA declFloat    {: :}
+                 | declFloat                        {: :}
+                 ;
 
-ident_list_float ::= ident_list_float COMMA IDENT:i		{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
-				 | ident_list_float COMMA IDENT:i		{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
-				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.FLOAT), "-1", e1); :}
-				 | IDENT:i								{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
-				 | IDENT:i 								{: variables.declare(i, actualScope, Variable.FLOAT, "-1"); :}
-				   ASIG exp:e1							{: Printer.assignment(new Variable(i, Variable.FLOAT), "-1", e1); :}
-				 ;
+declFloat ::= IDENT:i                   {: symTable.declare(i, actualScope, SymbolTable.FLOAT); :}
+            | IDENT:i ASIG exp:e        {: symTable.declare(i, actualScope, SymbolTable.FLOAT); printer.assignment(symTable.lookUp(i), e); :}
+            ;
 
-n_list	::= n_list:l COMMA exp:e	{: RESULT = Printer.arrInit(l, tempIdx++, e); :}
-		  | exp:e					{: RESULT = Printer.arrInit(null, tempIdx++, e); :}
-		  ;
-			
-		// Expressions
-exp		::= exp:e1 MAS exp:e2		{: RESULT = Printer.tern(e1, Printer.ADD, e2); :}
-   	      | exp:e1 MENOS exp:e2   	{: RESULT = Printer.tern(e1, Printer.SUB, e2); :}
-          | exp:e1 POR exp:e2     	{: RESULT = Printer.tern(e1, Printer.MUL, e2); :}
-          | exp:e1 DIV exp:e2     	{: RESULT = Printer.tern(e1, Printer.DIV, e2); :}
-          | exp:e1 MOD exp:e2     	{: RESULT = Printer.mod(e1, e2); :}
-	      | MENOS exp:e1          	{: RESULT = Printer.tern(new Variable("0", Variable.INT), Printer.SUB, e1); :}  %prec UMINUS
-          | AP exp:e1 CP          	{: RESULT = e1; :}
-		  | assig:a 				{: RESULT = a; :}
-		  | varOrNumber:n			{: RESULT = n; :}
-		  | incrop:op exp:e	    	{: RESULT = Printer.preIncr(e, op); :} %prec PREINCR
-		  | exp:e incrop:op			{: RESULT = Printer.postIncr(e, op); :}
-		  | AP INT CP exp:e			{: RESULT = Printer.casting(e, Variable.INT); :}
-		  | AP FLOAT CP 
-			varOrNumber:n1 			{: RESULT = Printer.casting(n1, Variable.FLOAT); :}
-			DIV varOrNumber:n2		{: Variable e2 = Printer.casting(n2, Variable.FLOAT); 
-									   RESULT = Printer.tern(RESULT, Printer.DIV, e2);
+exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
+      | exp:e1 MENOS exp:e2   		    {: RESULT = printer.tern(e1, Printer.SUB, e2); :}
+      | exp:e1 POR exp:e2     		    {: RESULT = printer.tern(e1, Printer.MUL, e2); :}
+      | exp:e1 DIV exp:e2     		    {: RESULT = printer.tern(e1, Printer.DIV, e2); :}
+      | exp:e1 MOD exp:e2     		    {: RESULT = printer.mod(e1,e2); :}
+      | MENOS exp:e          		    {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
+      | AP exp:e CP          		    {: RESULT = e; :}
+      | IDENT:i ASIG exp:e 	    	    {: RESULT = printer.assignment(symTable.lookUp(i), e); :}
+      | varOrNumber:n                   {: RESULT = n; :}
+      | prePostIncrDecr:n               {: RESULT = n; :}
+      | casting:n                       {: RESULT = n; :}
+      ;
+
+varOrNumber ::= IDENT:i				            {: RESULT = symTable.lookUp(i); :}
+              | ENTERO:n              		    {: RESULT = n; :}
+              | REAL:n                          {: RESULT = n; :}
+              ;
+
+    // PRE-POST INCREMENT/DECREMENT
+prePostIncrDecr ::= incrDecrOp:op IDENT:i       {: RESULT = printer.preIncrDecr(symTable.lookUp(i), op); :} %prec PREINCR
+                  | IDENT:i incrDecrOp:op       {: RESULT = printer.postIncrDecr(symTable.lookUp(i), op); :}
+                  | error                       {:  :}
+                  ;
+
+incrDecrOp ::= INCR					{: RESULT = "++"; :}
+		     | DECR					{: RESULT = "--"; :}
+		     ;
+
+    // Explicit CASTING
+casting ::= AP INT CP exp:e			{: RESULT = printer.casting(e, SymbolTable.INT); :}
+          | AP FLOAT CP
+            varOrNumber:n1 			{: RESULT = printer.casting(n1, SymbolTable.FLOAT); :}
+            DIV varOrNumber:n2		{: Object e2 = printer.casting(n2, SymbolTable.FLOAT);
+                                       RESULT = printer.tern(RESULT, Printer.DIV, e2);
+                                    :}
+          ;
+
+cond ::= exp:e1 EQ exp:e2		    {: RESULT = printer.condition(e1, Condition.EQ, e2); :}
+       | exp:e1 NEQ exp:e2		    {: RESULT = printer.condition(e1, Condition.NEQ, e2); :}
+       | exp:e1 LOW exp:e2		    {: RESULT = printer.condition(e1, Condition.LOW, e2); :}
+       | exp:e1 LOE exp:e2		    {: RESULT = printer.condition(e1, Condition.LOE, e2); :}
+       | exp:e1 GRE exp:e2		    {: RESULT = printer.condition(e1, Condition.GRE, e2); :}
+       | exp:e1 GOE exp:e2		    {: RESULT = printer.condition(e1, Condition.GOE, e2); :}
+       | NOT cond:c1			    {: RESULT = new Condition();
+					                   RESULT.trueTag = c1.falseTag;
+					                   RESULT.falseTag = c1.trueTag;
+					                :}
+       | cond:c1 AND 			    {: printer.label(c1.trueTag); :}
+	     cond:c2  			        {: printer.label(c1.falseTag);
+					                   printer.goTo(c2.trueTag);
+					                   RESULT = c2;
+					                :}
+       | cond:c1 OR			        {: printer.label(c1.falseTag); :}
+ 	     cond:c2  			        {: printer.label(c1.trueTag);
+					                   printer.goTo(c2.falseTag);
+					                   RESULT = c2;
+					                :}
+       | AP cond:c1 CP			    {: RESULT = c1; :}
+       ;
+
+
+// LOOPS and FLOW CONTROLS
+
+    // IF [ELSE]
+ifElseSent ::= IF:endIf             {: :}
+               AP cond:c CP		    {: printer.label(c.trueTag); :}
+               sent				    {: printer.goTo(endIf);
+					   				   printer.label(c.falseTag);
 									:}
-		  ;
+               elsePart             {: printer.label(endIf); :}
+               ;
 
-varOrNumber ::= IDENT:i					{: RESULT = variables.lookUp(i, actualScope); :}
-		  | IDENT:i AC exp:n CC 		{: Variable var = variables.lookUp(i, actualScope);
-										   Printer.rangeCheck(var, n);  
-										   RESULT = Printer.arrayToTmp(var, n.getValue()); 
-										:}
-	      | INTEGER:n              		{: RESULT = new Variable(n, Variable.INT); :}
-		  | FLOATN:n					{: RESULT = new Variable(n, Variable.FLOAT); :}
-		  ;
+elsePart ::= ELSE sent
+       |
+       ;
 
-		// Assignation (not declaration)
-assig	::= IDENT:i ASIG exp:e1 					{: RESULT = Printer.assignment(variables.lookUp(i, actualScope), "-1", e1); :}
-		  | IDENT:i AC exp:n CC ASIG exp:e1 		{: RESULT = Printer.assignment(variables.lookUp(i, actualScope), n.getValue(), e1); :}
-		  ;
-			
-		// Increment or decrement
-incrop 	::= INCR					{: RESULT = "++"; :}
-		  | DECR					{: RESULT = "--"; :}
-		  ;
-		
-		// Boolean conditions
-cond	::= exp:e1 EQ exp:e2		{: RESULT = Printer.condition(e1, Condition.EQ, e2); :}
-		  | exp:e1 NEQ exp:e2		{: RESULT = Printer.condition(e1, Condition.NEQ, e2); :}
-		  | exp:e1 LOW exp:e2		{: RESULT = Printer.condition(e1, Condition.LOW, e2); :} 
-		  | exp:e1 LOE exp:e2		{: RESULT = Printer.condition(e1, Condition.LOE, e2); :}
-		  | exp:e1 GRE exp:e2		{: RESULT = Printer.condition(e1, Condition.GRE, e2); :}
-		  | exp:e1 GOE exp:e2		{: RESULT = Printer.condition(e1, Condition.GOE, e2); :}
-		  | NOT cond:c1				{: RESULT = c1.not(); :}
-		  | cond:c1 AND 			{: Printer.label(c1.trueTag); :}
-			cond:c2		  			{: Printer.label(c1.falseTag);
-									   Printer.goTo(c2.trueTag);
-									   RESULT = c2;									
-									:}
-		  | cond:c1 OR 				{: Printer.label(c1.falseTag); :}
-			cond:c2		  			{: Printer.label(c1.trueTag);
-									   Printer.goTo(c2.falseTag);
-									   RESULT = c2;									
-									:}
-		  | AP cond:c1 CP			{: RESULT = c1; :}
-		  ;
+    // WHILE loop
+whileLoop ::= WHILE:whileTag		{: printer.label(whileTag); :}
+              AP cond:c CP   		{: printer.label(c.falseTag); :}
+              sent				    {: printer.goTo(whileTag);
+                                       printer.goTo(c.trueTag);
+                                    :}
+                ;
+
+    // DO WHILE
+doWhileLoop ::= DO:doTag       		{: printer.label(doTag); :}
+                sent                {: :}
+                WHILE AP cond:c CP  {: :}
+                PYC		            {: printer.label(c.trueTag);
+                                       printer.goTo(doTag);
+                                       printer.label(c.falseTag);
+                                    :}
+                ;
+
+    // FOR loop
+forLoop ::= FOR:forTag
+	        AP exp:e1			    {: printer.label(forTag); :}
+	        PYC cond:c PYC			{: RESULT = Yylex.newTag();
+					                   printer.label(RESULT.toString());
+                                    :}
+	        exp:e2				    {: printer.goTo(forTag);
+					                   printer.label(c.trueTag);
+					                :}
+	        CP sent			        {: printer.goTo(RESULT.toString());
+					                   printer.label(c.falseTag);
+					                :}
+            ;
+
+    // FOR TO/DOWN TO (pascal)
+forPascal ::= forTo                 {: :}
+            | forDownTo             {: :}
+            ;
+
+    // FOR TO [step]
+forTo ::= FOR:forTag exp:e1         {: :}
+          TO:toTag exp:e2           {: printer.label(forTag);
+                                       RESULT = printer.condition(e2, Condition.LOW, e1);
+                                       printer.label(toTag);
+                                    :}
+          stepPart:s DO             {: printer.raw(e1 + " = " + e1 + " + " + ((s == null) ? "1" : s) + ";");
+                                       printer.goTo(forTag);
+                                       printer.label(((Condition) RESULT).falseTag);
+                                    :}
+          ALL listaSent CLL         {: printer.goTo(toTag);
+                                       printer.label(((Condition) RESULT).trueTag);
+                                    :}
+          ;
+
+    // FOR DOWNTO [step]
+forTo ::= FOR:forTag exp:e1         {: :}
+          DOWNTO:toTag exp:e2       {: printer.label(forTag);
+                                       RESULT = printer.condition(e1, Condition.LOW, e2);
+                                       printer.label(toTag);
+                                    :}
+          stepPart:s DO             {:
+                                       printer.raw(e1 + " = " + e1 + " - " + ((s == null) ? "1" : s) + ";");
+                                       printer.goTo(forTag);
+                                       printer.label(((Condition) RESULT).falseTag);
+                                    :}
+          ALL listaSent CLL         {: printer.goTo(toTag);
+                                       printer.label(((Condition) RESULT).trueTag);
+                                    :}
+          ;
+
+stepPart ::= STEP exp:e             {: RESULT = e; :}
+           |                        {: RESULT = null; :}
+           ;

@@ -2,4 +2,4 @@
 
 cup PLXC.cup 
 jflex PLXC.flex
-javac *.java
+javac -cp ../lib/java-cup-11b-runtime.jar *.java

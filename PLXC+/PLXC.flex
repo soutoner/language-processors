@@ -33,11 +33,9 @@ import java_cup.runtime.*;
     ")"                  		{ return new Symbol(sym.CP); }
     "{"                  		{ return new Symbol(sym.ALL); }
     "}"                  		{ return new Symbol(sym.CLL); }
-    "["                  		{ return new Symbol(sym.AC); }
-    "]"                  		{ return new Symbol(sym.CC); }
 /* Delimiter */
     ";"                  		{ return new Symbol(sym.PYC); }
-    ","                  		{ return new Symbol(sym.COMMA); }
+    ","                  		{ return new Symbol(sym.COMA); }
 /* Assignations */
     "="                  		{ return new Symbol(sym.ASIG); }
 /* Comparisons */
@@ -58,16 +56,16 @@ import java_cup.runtime.*;
     "do"                 		{ return new Symbol(sym.DO, newTag()); }
     "for"                		{ return new Symbol(sym.FOR, newTag()); }
     "print"              		{ return new Symbol(sym.PRINT); }
-    "int"              			{ return new Symbol(sym.INT); }
-    "step"              		{ return new Symbol(sym.STEP); }
-    "to"              			{ return new Symbol(sym.TO, newTag()); }
-    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
+    "int"              		    { return new Symbol(sym.INT); }
     "float"              		{ return new Symbol(sym.FLOAT); }
+    "to"              		    { return new Symbol(sym.TO, newTag()); }
+    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
+    "step"              		{ return new Symbol(sym.STEP); }
 /* Numbers */
-	0|[1-9][0-9]*        		{ return new Symbol(sym.INTEGER, yytext()); }
-    [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?                  		{ return new Symbol(sym.FLOATN, yytext()); }
+    0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
+    [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?   { return new Symbol(sym.REAL, new Double(yytext())); }
 /* Identifiers */
-    [_a-zA-Z$][_a-zA-Z0-9$]*	{ return new Symbol(sym.IDENT, yytext()); }
+    [_a-zA-Z$][_a-zA-Z0-9$]*    { return new Symbol(sym.IDENT, yytext()); }
 /* Others */
     \ |\t\f              		{  }  
     [^]                  		{ /*throw new Error("Illegal character <"+yytext()+">");*/ }

@@ -4,7 +4,8 @@ public class PLXC {
 
 	public static PrintStream out;
 
-	static public void main(String argv[]) {    
+	static public void main(String argv[]) {
+		parser p = null;
 		try {
 			Reader in = new InputStreamReader(System.in);
 			out = System.out;
@@ -17,9 +18,11 @@ public class PLXC {
 			if(argv.length > 1)
 				out = new PrintStream(new FileOutputStream(argv[1]));
 
-			parser p = new parser(new Yylex(in));
+			p = new parser(new Yylex(in));
 			Object result = p.parse().value;
 		
+		} catch (RuntimeException re) {
+			p.done_parsing();						// If exception is thrown, stop parsing
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
