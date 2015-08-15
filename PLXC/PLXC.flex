@@ -57,6 +57,9 @@ import java_cup.runtime.*;
     "for"                		{ return new Symbol(sym.FOR, newTag()); }
     "print"              		{ return new Symbol(sym.PRINT); }
     "int"              		    { return new Symbol(sym.INT); }
+    "to"              		    { return new Symbol(sym.TO, newTag()); }
+    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
+    "step"              		{ return new Symbol(sym.STEP); }
 /* Numbers */
     0|[1-9][0-9]*        		{ return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
 /* Identifiers */

@@ -27,6 +27,17 @@ public class Printer {
 		return tmp;
 	}
 
+	// Mod operation
+	public String mod(Object e1, Object e2) {
+		String tmp1 = newTmp();
+		out.println("   " + tmp1 + " = " + e1 + " / " + e2 + ";");
+		String tmp2 = newTmp();
+		out.println("   " + tmp2 + " = " + tmp1 + " * " + e2 + ";");
+		String tmp3 = newTmp();
+		out.println("   " + tmp3 + " = " + e1 + " - " + tmp2 + ";");
+		return tmp3;
+	}
+
 	// Print
 	public void print(Object exp) {
 		out.println("   print " + exp + ";");
@@ -98,18 +109,23 @@ public class Printer {
 		return tags;
 	}
 
+	// Raw message
+	public void raw(String sent) {
+		out.println("   " + sent);
+	}
+
 	// Error without message
 	public void error() {
-		out.println("error;");
-		out.println("halt;");
+		out.println("   error;");
+		out.println("   halt;");
         throw new RuntimeException(); // RuntimeException is caught and done_parsing() is called (PLXC.java)
 	}
 
 	// Error with message
 	public void error(String err) {
         out.println("# ERROR: " + err);
-        out.println("error;");
-		out.println("halt;");
+        out.println("   error;");
+		out.println("   halt;");
         throw new RuntimeException(err); // RuntimeException is caught and done_parsing() is called (PLXC.java)
 	}
 

@@ -22,7 +22,7 @@ public class PLXC {
 			Object result = p.parse().value;
 		
 		} catch (RuntimeException re) {
-			p.done_parsing();
+			p.done_parsing();						// If exception is thrown, stop parsing
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
