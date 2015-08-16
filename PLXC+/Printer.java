@@ -1,5 +1,7 @@
 import java.lang.Double;
 import java.lang.RuntimeException;
+import java.lang.String;
+import java.util.*;
 
 public class Printer {
 
@@ -12,43 +14,42 @@ public class Printer {
 	private static int actualTmp = 0; 	// Temporary variables counter
 	private java.io.PrintStream out;	// Print stream
 	private SymbolTable symTable;		// Actual SymbolTable
+	private Map<String, List<Object>> constArrays; // Map of constant arrays
 
 	public Printer(){
 		this.out = PLXC.out;
 	}
 
-	public Printer(SymbolTable symTable){
+	public Printer(SymbolTable symTable, Map<String, List<Object>> constArrays){
 		this.out = PLXC.out;
 		this.symTable = symTable;
+		this.constArrays = constArrays;
 	}
 
-	// Creates temporary variables (String tag)
+	// Creates temporary variables (intg)
 	private String newIntTmp() {
 		return "t"+(actualTmp++);
 	}
 
-	// Creates temporary variables (String tag)
+	// Creates temporary variables (float)
 	private String newFloatTmp() {
 		return "$t"+(actualTmp++);
 	}
 
-	// Assignment (array)
+	// Assignment (maybe array)
 	public String assignment(String id, Object idx, Object exp) {
-		String casting = "";
-		String index = "";
-
-		// Check range
-		if(idx != null){
-			index += "[" + idx + "]";
-			checkRange(id, idx);
-		}
+		// Assign float to int, error
+		if(isEntero(id) && isReal(exp))
+			error("tried to assign float value to int");
 
 		// Asssign int to foat variable, implicit casting needed
-		if(isReal(id) && isEntero(exp))
-			casting += "(float) ";
-		// Assign float to int, error
-		else if(isEntero(id) && isReal(exp))
-			error("tried to assign float value to int");
+		String casting = (isReal(id) && isEntero(exp)) ? "(float) " : "";
+		// If index is provided, append it
+		String index = (idx != null) ? "[" + idx + "]" : "";
+
+		// Check range
+		if(idx != null && !isTmp(id))
+			checkRange(id, idx);
 
 		out.println("   " + id + index + " = " + casting + exp + ";");
 
@@ -57,7 +58,11 @@ public class Printer {
 
 	// Assignment
 	public String assignment(String id, Object exp) {
-		return assignment(id, null ,exp);
+		// Array to array assignment
+		if(isArray(id) && isArray(exp))
+			return arrayInit(id, constArrays.get(exp));
+		else
+			return assignment(id, null ,exp);
 	}
 
 	// Explicit casting
@@ -90,6 +95,30 @@ public class Printer {
 		out.println("   " + tmp + " = " + id + "[" + idx + "]" + ";");
 
 		return tmp;
+	}
+
+	// Explicit array initialization
+	public String arrayInit(String id, List<Object> list) {
+		if(symTable.sizeOf(id) < list.size())
+			error("array size lower than initialization");
+
+		String arrTmp = (isReal(id)) ? newFloatTmp() : newIntTmp();
+		String tmp = (isReal(id)) ? newFloatTmp() : newIntTmp();
+
+		int idx = 0;
+
+		for(Object exp: list)
+			assignment(arrTmp, idx++, exp);
+
+		for(int i = 0; i < list.size(); i++){
+			assignment(tmp, arrTmp + "[" + i + "]");
+			assignment(id, i, tmp);
+		}
+
+		// Add to map of const arrays
+		constArrays.put(id, list);
+
+		return assignment(id, arrTmp);
 	}
 
 	// Check if the idx is in range of the array
@@ -265,7 +294,11 @@ public class Printer {
 	}
 
 	private boolean isArray(Object o){
-		return symTable.sizeOf(o) > 0;
+		return (o instanceof String) && !isTmp(o) && symTable.sizeOf(o) > 0;
+	}
+
+	private boolean isTmp(Object o){
+		return (o instanceof String) && (((String) o).matches("t[0-9]+") || ((String) o).matches("$t[0-9]+"));
 	}
 
 }

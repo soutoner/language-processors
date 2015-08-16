@@ -1,11 +1,13 @@
 // PLC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
+import java.util.*;
 
 // Code available in the grammar actions
 action code {:
-	SymbolTable symTable = new SymbolTable();   // Symbol table
-    Printer printer = new Printer(symTable);    // Variable for printing
-	int actualScope = 0;                        // Aux variable for scope
+	SymbolTable symTable = new SymbolTable();                   // Symbol table
+	Map<String, List<Object>> constArrays = new HashMap<String, List<Object>>(); // Map for constant arrays (array explicit init)
+    Printer printer = new Printer(symTable, constArrays);    // Variable for printing
+	int actualScope = 0;                                        // Aux variable for scope
 :}
 
 // Override error reporting method
@@ -30,15 +32,16 @@ terminal Integer    	ENTERO;
 terminal Double    	    REAL;
 
 /* Non terminals */
-non terminal         	sent, listaSent;
-non terminal         	declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
-non terminal            whileLoop, doWhileLoop, forLoop, forPascal;
-non terminal            forTo, forDownTo;
-non terminal			ifElseSent, elsePart;
-non terminal String     incrDecrOp;
-non terminal Condition	cond;
-non terminal Object 	exp, prePostIncrDecr, assignment, varOrNumber, casting;
-non terminal Object     stepPart;
+non terminal         	    sent, listaSent;
+non terminal         	    declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
+non terminal                whileLoop, doWhileLoop, forLoop, forPascal;
+non terminal                forTo, forDownTo;
+non terminal			    ifElseSent, elsePart;
+non terminal String         incrDecrOp;
+non terminal Condition	    cond;
+non terminal Object 	    exp, prePostIncrDecr, assignment, varOrNumber, casting;
+non terminal Object         stepPart;
+non terminal List<Object>   listaExp;
 
 /* Precedence */
 precedence left         COMA;
@@ -84,8 +87,14 @@ listaDeclInt ::= listaDeclInt COMA declInt  {: :}
 
 declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, SymbolTable.INT); :}
           | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, SymbolTable.INT, size); :}
+          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, SymbolTable.INT, size); :}
+            ASIG ALL listaExp:l CLL     {: printer.arrayInit(i, l); :}
           | IDENT:i ASIG exp:e          {: symTable.declare(i, actualScope, SymbolTable.INT); printer.assignment(symTable.lookUp(i), e); :}
           ;
+
+listaExp ::= listaExp:l COMA exp:e      {: l.add(e); RESULT = l; :}
+         | exp:e                        {: RESULT = new ArrayList<Object>(); RESULT.add(e); :}
+         ;
 
     // FLOAT declarations
 listaDeclFloat ::= listaDeclFloat COMA declFloat    {: :}
@@ -111,6 +120,7 @@ exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2)
 
 assignment ::= IDENT:i ASIG exp:e 	    	        {: RESULT = printer.assignment(symTable.lookUp(i), e); :}
              | IDENT:i AC exp:idx CC ASIG exp:e     {: RESULT = printer.assignment(symTable.lookUp(i), idx, e); :}
+             | IDENT:i ASIG ALL listaExp:l CLL      {: RESULT = printer.arrayInit(i, l); :}
              ;
 
 varOrNumber ::= IDENT:i				            {: RESULT = symTable.lookUp(i); :}

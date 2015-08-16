@@ -1,5 +1,7 @@
 #!/bin/bash
 
+passed_test = 0;
+
 # $1 path to the exercise
 # $2 counter if any
 correct_exercise () {
@@ -10,6 +12,7 @@ correct_exercise () {
 	if [[ $solution == $exercise ]]
 	then
 		echo "${2-1}. ${name} Ok!";
+		passed_test=$((passed_test+1));
 	else 
 		echo "${2-1}. ${name} ERROR! Expected: ${solution} Given: ${exercise}";
 	fi
@@ -29,4 +32,5 @@ else
 	done
 fi
 
+echo "Nº of Ok!: ${passed_test}/${count}";
 

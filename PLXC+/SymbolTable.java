@@ -2,7 +2,6 @@ import java.lang.Double;
 import java.lang.Runtime;
 import java.lang.RuntimeException;
 import java.util.*;
-import java.util.ArrayList;
 
 public class SymbolTable {
 
@@ -16,7 +15,7 @@ public class SymbolTable {
     public final static int INT = 20;
     public final static int FLOAT = 21;
 
-    private Map<String, List<int []>> symTable;    // Map of identifier -> list of ocurrences [scope, type]
+    private Map<String, List<int []>> symTable;    // Map of identifier -> list of ocurrences [scope, type, size]
     private Printer out;                            // Variable for printing
 
     public SymbolTable(){
@@ -106,10 +105,12 @@ public class SymbolTable {
             return FLOAT;
         } else { // String
             if(symTable.get(o) == null){ // Tmp
-                if(((String) o).charAt(0) == 't'){
+                if(((String) o).charAt(0) == 't'){ // INT tmp
                     return INT;
-                } else {
+                } else if (((String) o).charAt(0) == '$'){ // FLOAT tmp
                     return FLOAT;
+                } else {
+                    return 0;
                 }
             } else { // Ident, fetch closer ocurrence type
                 return symTable.get(o).get(0)[IDX_TYPE];
