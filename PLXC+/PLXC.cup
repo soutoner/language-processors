@@ -18,7 +18,7 @@ parser code {:
 
 /* Terminals */
 terminal            	MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
-terminal            	AP, CP, ALL, CLL;
+terminal            	AP, CP, ALL, CLL, AC, CC;
 terminal            	ASIG, PYC, COMA;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
@@ -37,7 +37,8 @@ non terminal            forTo, forDownTo;
 non terminal			ifElseSent, elsePart;
 non terminal String     incrDecrOp;
 non terminal Condition	cond;
-non terminal Object 	exp, prePostIncrDecr, stepPart, casting, varOrNumber;
+non terminal Object 	exp, prePostIncrDecr, assignment, varOrNumber, casting;
+non terminal Object     stepPart;
 
 /* Precedence */
 precedence left         COMA;
@@ -82,6 +83,7 @@ listaDeclInt ::= listaDeclInt COMA declInt  {: :}
                ;
 
 declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, SymbolTable.INT); :}
+          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, SymbolTable.INT, size); :}
           | IDENT:i ASIG exp:e          {: symTable.declare(i, actualScope, SymbolTable.INT); printer.assignment(symTable.lookUp(i), e); :}
           ;
 
@@ -101,13 +103,18 @@ exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2)
       | exp:e1 MOD exp:e2     		    {: RESULT = printer.mod(e1,e2); :}
       | MENOS exp:e          		    {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
       | AP exp:e CP          		    {: RESULT = e; :}
-      | IDENT:i ASIG exp:e 	    	    {: RESULT = printer.assignment(symTable.lookUp(i), e); :}
+      | assignment:a                    {: RESULT = a; :}
       | varOrNumber:n                   {: RESULT = n; :}
       | prePostIncrDecr:n               {: RESULT = n; :}
       | casting:n                       {: RESULT = n; :}
       ;
 
+assignment ::= IDENT:i ASIG exp:e 	    	        {: RESULT = printer.assignment(symTable.lookUp(i), e); :}
+             | IDENT:i AC exp:idx CC ASIG exp:e     {: RESULT = printer.assignment(symTable.lookUp(i), idx, e); :}
+             ;
+
 varOrNumber ::= IDENT:i				            {: RESULT = symTable.lookUp(i); :}
+              | IDENT:i AC exp:idx CC           {: RESULT = printer.loadArray(symTable.lookUp(i), idx); :}
               | ENTERO:n              		    {: RESULT = n; :}
               | REAL:n                          {: RESULT = n; :}
               ;

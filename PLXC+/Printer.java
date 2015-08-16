@@ -32,18 +32,32 @@ public class Printer {
 		return "$t"+(actualTmp++);
 	}
 
-	// Assignment
-	public String assignment(String id, Object exp) {
+	// Assignment (array)
+	public String assignment(String id, Object idx, Object exp) {
 		String casting = "";
+		String index = "";
 
-		if(isReal(id) && isEntero(exp)) // Asssign int to foat variable, implicit casting needed
+		// Check range
+		if(idx != null){
+			index += "[" + idx + "]";
+			checkRange(id, idx);
+		}
+
+		// Asssign int to foat variable, implicit casting needed
+		if(isReal(id) && isEntero(exp))
 			casting += "(float) ";
+		// Assign float to int, error
 		else if(isEntero(id) && isReal(exp))
 			error("tried to assign float value to int");
 
-		out.println("   " + id + " = " + casting + exp + ";");
+		out.println("   " + id + index + " = " + casting + exp + ";");
 
 		return id;
+	}
+
+	// Assignment
+	public String assignment(String id, Object exp) {
+		return assignment(id, null ,exp);
 	}
 
 	// Explicit casting
@@ -64,6 +78,37 @@ public class Printer {
 		out.println("   " + tmp + " = " + casting + " " + exp + ";");
 
 		return tmp;
+	}
+
+	// Load array to tmp variable
+	public String loadArray(String id, Object idx) {
+		String tmp = (isReal(id)) ? newFloatTmp() : newIntTmp();
+
+		// Check Range
+		checkRange(id, idx);
+
+		out.println("   " + tmp + " = " + id + "[" + idx + "]" + ";");
+
+		return tmp;
+	}
+
+	// Check if the idx is in range of the array
+	public void checkRange(String id, Object idx) {
+		if(!isArray(id))
+			throw new RuntimeException("checking range on non array");
+
+		int size = symTable.sizeOf(id);
+
+		Condition cond = new Condition();
+		out.println("# Comprobacion de rango");
+		out.println("   if (" + idx + " < 0) goto " + cond.trueTag + ";");
+		out.println("   if (" + size + " < " + idx + ") goto " + cond.trueTag + ";");
+		out.println("   if (" + size + " == " + idx + ") goto " + cond.trueTag + ";");
+		goTo(cond.falseTag);
+		label(cond.trueTag);
+		out.println("   error;");
+		out.println("   halt;");
+		label(cond.falseTag);
 	}
 
 	// Print
@@ -217,6 +262,10 @@ public class Printer {
 
 	private boolean isEntero(Object o){
 		return symTable.typeOf(o) == SymbolTable.INT;
+	}
+
+	private boolean isArray(Object o){
+		return symTable.sizeOf(o) > 0;
 	}
 
 }

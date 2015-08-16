@@ -33,6 +33,8 @@ import java_cup.runtime.*;
     ")"                  		{ return new Symbol(sym.CP); }
     "{"                  		{ return new Symbol(sym.ALL); }
     "}"                  		{ return new Symbol(sym.CLL); }
+    "["                  		{ return new Symbol(sym.AC); }
+    "]"                  		{ return new Symbol(sym.CC); }
 /* Delimiter */
     ";"                  		{ return new Symbol(sym.PYC); }
     ","                  		{ return new Symbol(sym.COMA); }
