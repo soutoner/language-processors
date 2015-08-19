@@ -4,10 +4,9 @@ import java.util.*;
 
 // Code available in the grammar actions
 action code {:
-	SymbolTable symTable = new SymbolTable();                   // Symbol table
-	Map<String, List<Object>> constArrays = new HashMap<String, List<Object>>(); // Map for constant arrays (array explicit init)
-    Printer printer = new Printer(symTable, constArrays);    // Variable for printing
-	int actualScope = 0;                                        // Aux variable for scope
+    SymbolTable symTable = new SymbolTable();       // Symbol table
+    Printer printer = new Printer(symTable);        // Variable for printing
+	int actualScope = 0;                            // Aux variable for scope
 :}
 
 // Override error reporting method
@@ -85,11 +84,11 @@ listaDeclInt ::= listaDeclInt COMA declInt  {: :}
                | declInt                    {: :}
                ;
 
-declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, SymbolTable.INT); :}
-          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, SymbolTable.INT, size); :}
-          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, SymbolTable.INT, size); :}
+declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, Occurrence.INT); :}
+          | IDENT:i ASIG exp:e          {: symTable.declare(i, actualScope, Occurrence.INT); printer.assignment(symTable.lookUp(i), e); :}
+          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, Occurrence.INT, size);:}
+          | IDENT:i AC ENTERO:size CC   {: symTable.declare(i, actualScope, Occurrence.INT, size); :}
             ASIG ALL listaExp:l CLL     {: printer.arrayInit(i, l); :}
-          | IDENT:i ASIG exp:e          {: symTable.declare(i, actualScope, SymbolTable.INT); printer.assignment(symTable.lookUp(i), e); :}
           ;
 
 listaExp ::= listaExp:l COMA exp:e      {: l.add(e); RESULT = l; :}
@@ -101,8 +100,11 @@ listaDeclFloat ::= listaDeclFloat COMA declFloat    {: :}
                  | declFloat                        {: :}
                  ;
 
-declFloat ::= IDENT:i                   {: symTable.declare(i, actualScope, SymbolTable.FLOAT); :}
-            | IDENT:i ASIG exp:e        {: symTable.declare(i, actualScope, SymbolTable.FLOAT); printer.assignment(symTable.lookUp(i), e); :}
+declFloat ::= IDENT:i                       {: symTable.declare(i, actualScope, Occurrence.FLOAT); :}
+            | IDENT:i ASIG exp:e            {: symTable.declare(i, actualScope, Occurrence.FLOAT); printer.assignment(symTable.lookUp(i), e); :}
+            | IDENT:i AC ENTERO:size CC     {: symTable.declare(i, actualScope, Occurrence.FLOAT, size); :}
+            | IDENT:i AC ENTERO:size CC     {: symTable.declare(i, actualScope, Occurrence.FLOAT, size); :}
+              ASIG ALL listaExp:l CLL       {: printer.arrayInit(i, l); :}
             ;
 
 exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
@@ -140,10 +142,10 @@ incrDecrOp ::= INCR					{: RESULT = "++"; :}
 		     ;
 
     // Explicit CASTING
-casting ::= AP INT CP exp:e			{: RESULT = printer.casting(e, SymbolTable.INT); :}
+casting ::= AP INT CP exp:e			{: RESULT = printer.casting(e, Occurrence.INT); :}
           | AP FLOAT CP
-            varOrNumber:n1 			{: RESULT = printer.casting(n1, SymbolTable.FLOAT); :}
-            DIV varOrNumber:n2		{: Object e2 = printer.casting(n2, SymbolTable.FLOAT);
+            varOrNumber:n1 			{: RESULT = printer.casting(n1, Occurrence.FLOAT); :}
+            DIV varOrNumber:n2		{: Object e2 = printer.casting(n2, Occurrence.FLOAT);
                                        RESULT = printer.tern(RESULT, Printer.DIV, e2);
                                     :}
           ;
