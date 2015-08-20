@@ -63,6 +63,7 @@ import java_cup.runtime.*;
     "to"              		    { return new Symbol(sym.TO, newTag()); }
     "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
     "step"              		{ return new Symbol(sym.STEP); }
+    "in"              		    { return new Symbol(sym.IN); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
     [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?   { return new Symbol(sym.REAL, new Double(yytext())); }

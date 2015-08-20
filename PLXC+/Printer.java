@@ -1,11 +1,5 @@
 import java.lang.*;
-import java.lang.Double;
-import java.lang.Object;
-import java.lang.Runtime;
-import java.lang.RuntimeException;
-import java.lang.String;
 import java.util.*;
-import java.util.ArrayList;
 
 public class Printer {
 
@@ -30,7 +24,7 @@ public class Printer {
 
 	// Creates temporary variables identifier (INT - tXX or FLOAT - $tXX)
 	private String newTmp(int type) {
-		return (type == Occurrence.INT) ? "t"+(actualTmp++) : "$t"+(actualTmp++);
+        return (type == Occurrence.INT) ? "t"+(actualTmp++) : "$t"+(actualTmp++);
 	}
 
     /**
@@ -51,14 +45,13 @@ public class Printer {
         if((isReal(id) && isEntero(exp)))
             expression = rawAssignment(newTmp(symTable.typeOf(id)), null, "(float)", exp, null);
 
-		return rawAssignment(id, idx, null, expression, null);
+		return rawAssignment(id, idx, expression, null);
 	}
 
     // Assignments ID = EXP, ARR = ARR
     public String assignment(String id, Object exp) {
-        // TODO: Array to array assignment
-        //if(isArray(id) && isArray(exp))
-        //	return arrayInit(id, new ArrayList<Object>(Arrays.asList((Object []) symTable.valueOf(exp))));
+        if(isArray(id) && isArray(exp))
+        	return arrayToArrayAssignment(id, exp);
 
         // Assign float to int, error
         if(isEntero(id) && isReal(exp))
@@ -87,6 +80,16 @@ public class Printer {
         return asigned;
     }
 
+    // asigned = exp; asigned[idx] = exp; asigned = arr[i]; (without casting)
+    private String rawAssignment(String asigned, Object idx1 , Object expOrArray, Object idx2) {
+        String index1 = (idx1 != null) ? "[" + idx1.toString() + "]" : "";
+        String index2 = (idx2 != null) ? "[" + idx2.toString() + "]" : "";
+
+        out.println("   " + asigned + index1 + " = " + expOrArray + index2 + ";");
+
+        return asigned;
+    }
+
     /**
      * ARRAYS
      */
@@ -94,7 +97,7 @@ public class Printer {
     // Explicit array initialization
     public String arrayInit(String id, List<Object> list) {
         if(symTable.sizeOf(id) < list.size())
-            error("array size lower than initialization");
+            error("las matrices no son compatibles");
 
         String arrTmp = newTmp(symTable.typeOf(id));
         String tmp = newTmp(symTable.typeOf(id));
@@ -104,15 +107,15 @@ public class Printer {
         for(Object exp: list) {
             if(symTable.typeOf(id) != symTable.typeOf(exp))
                 error("error de tipos");
-            rawAssignment(arrTmp, idx++, null, exp, null);
+            rawAssignment(arrTmp, idx++, exp, null);
         }
 
         for(int i = 0; i < list.size(); i++){
-            rawAssignment(tmp, null, null, arrTmp, i);
-            rawAssignment(id, i, null, tmp, null);
+            rawAssignment(tmp, null, arrTmp, i);
+            rawAssignment(id, i, tmp, null);
         }
 
-        return rawAssignment(id, null, null, arrTmp, null);
+        return rawAssignment(id, null, arrTmp, null);
     }
 
 	// Load array to tmp variable
@@ -122,8 +125,26 @@ public class Printer {
         // Check Range
 		checkRange(id, idx);
 
-		return rawAssignment(tmp, null, null, id, idx );
+		return rawAssignment(tmp, null, id, idx );
 	}
+
+    // assign one array to the other
+    public String arrayToArrayAssignment(String arr1, Object arr2){
+        if(symTable.sizeOf(arr1) < symTable.sizeOf(arr2))
+            error("las matrices no son compatibles");
+
+        if(symTable.typeOf(arr1) != symTable.typeOf(arr2))
+            error("error de tipos");
+
+        String tmp = newTmp(symTable.typeOf(arr1));
+
+        for(int i = 0; i < symTable.sizeOf(arr1); i++){
+            rawAssignment(tmp, null, arr2, i);
+            rawAssignment(arr1, i, tmp, null);
+        }
+
+        return rawAssignment(arr1, null, arr2, null);
+    }
 
 	// Check if the idx is in range of the array
 	public void checkRange(String id, Object idx) {
@@ -210,7 +231,7 @@ public class Printer {
     // Post-Increment/Decrement
     public String postIncrDecr(Object id, String op){
         String tmp = newTmp(Occurrence.INT);
-        rawAssignment(tmp, null, "", id, null);
+        rawAssignment(tmp, null, id, null);
         rawTern((String) id, id, op.substring(0, op.length() - 1), new Integer(1));
 
         return tmp;
@@ -277,6 +298,43 @@ public class Printer {
     // Print
     public void print(Object exp) {
         out.println("   print " + exp + ";");
+    }
+
+    /**
+     * FOR IN
+     */
+
+    public Condition forIn(String id, String forTag, Object arr){
+        String array = "";
+        Integer size = 0;
+
+        if(arr instanceof String){ // array variable
+            array = symTable.lookUp((String) arr);
+            size = symTable.sizeOf(arr);
+            if(size <= 0)
+                error("tipo incorrecto");
+        } else { // explicit array
+            array = newTmp(symTable.typeOf(id));
+            size = ((List<Object>) arr).size();
+
+            int i = 0;
+            for(Object exp: (List<Object>) arr)
+                rawAssignment(array, i++, exp, null);
+        }
+
+        if(symTable.typeOf(id) != symTable.typeOf(array))
+            error("tipos incompatibles");
+
+        String index = newTmp(symTable.typeOf(id));
+
+        rawAssignment(index, null, new Integer(-1), null);
+        label(forTag);
+        rawTern(index, index, "+" , new Integer(1));
+        Condition cond = condition(index, Condition.LOW, size);
+        label(cond.trueTag);
+        rawAssignment(id, null, array, index);
+
+        return cond;
     }
 
     /**

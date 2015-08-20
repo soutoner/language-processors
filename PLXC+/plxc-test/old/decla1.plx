@@ -1,3 +1,0 @@
-int x;
-print (x);
-

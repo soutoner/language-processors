@@ -22,7 +22,7 @@ if [ $1 ]
 then
 	correct_exercise "plxc-test/${1}"
 else
-	count=1;
+	count=0;
 
 	for filename in plxc-test/*;
 	do

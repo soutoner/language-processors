@@ -1,18 +1,13 @@
-import java.lang.Double;
-import java.lang.Integer;
-import java.lang.Runtime;
-import java.lang.RuntimeException;
+import java.lang.*;
 import java.util.*;
 
 public class SymbolTable {
 
     private Map<String, List<Occurrence>> symTable;     // Map of identifier -> list of occurrence
-    private Map<String, Object []> arrays;              // Map of identifier (arrays) -> values
     private Printer out;                                // Variable for printing
 
     public SymbolTable() {
         symTable = new HashMap<String, List<Occurrence>>();
-        arrays = new HashMap<String, Object []>();
         out = new Printer();
     }
 
@@ -27,7 +22,6 @@ public class SymbolTable {
         if (occurrences == null) { // we need to add it to the symbol table
             symTable.put(id, new ArrayList<Occurrence>());
             symTable.get(id).add(new Occurrence(actualScope, type, size));
-            declareArray(id, type, size); // Declare values of array if neccessary
         } else { // identifier is declared, fetch first occurrence
             Occurrence closerOccurrence = occurrences.get(0);
 
@@ -40,15 +34,7 @@ public class SymbolTable {
             }
         }
 
-        // TODO: remove this
         // printSymTable();
-    }
-
-    private void declareArray(String id, int type, int size){
-        if(size <= 0) // Not an array
-            return;
-
-        arrays.put(id, (type == Occurrence.INT) ? new Integer[size] : new Double[size]);
     }
 
     // Declare variables into Symbol Table

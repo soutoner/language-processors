@@ -23,7 +23,7 @@ terminal            	AP, CP, ALL, CLL, AC, CC;
 terminal            	ASIG, PYC, COMA;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
-terminal				ELSE, PRINT, STEP;
+terminal				ELSE, PRINT, STEP, IN;
 terminal                INT, FLOAT;
 terminal String			IF, WHILE, DO, FOR,TO, DOWNTO;
 terminal String     	IDENT;
@@ -33,13 +33,13 @@ terminal Double    	    REAL;
 /* Non terminals */
 non terminal         	    sent, listaSent;
 non terminal         	    declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
-non terminal                whileLoop, doWhileLoop, forLoop, forPascal;
+non terminal                whileLoop, doWhileLoop, forLoop, forPascal, forIn;
 non terminal                forTo, forDownTo;
 non terminal			    ifElseSent, elsePart;
 non terminal String         incrDecrOp;
 non terminal Condition	    cond;
-non terminal Object 	    exp, prePostIncrDecr, assignment, varOrNumber, casting;
-non terminal Object         stepPart;
+non terminal Object         exp, variable, number, varOrNumber;
+non terminal Object 	    prePostIncrDecr, assignment, casting, stepPart, arrayPart;
 non terminal List<Object>   listaExp;
 
 /* Precedence */
@@ -67,6 +67,7 @@ sent ::= exp:e PYC                       {: :}
        | forLoop                         {: :}
        | forPascal                       {: :}
        | declaSent                       {: :}
+       | forIn                           {: :}
         // PRINT
        | PRINT AP exp:e1 CP PYC		     {: printer.print(e1); :}
         // Anonymous block
@@ -92,8 +93,8 @@ declInt ::= IDENT:i                     {: symTable.declare(i, actualScope, Occu
           ;
 
 listaExp ::= listaExp:l COMA exp:e      {: l.add(e); RESULT = l; :}
-         | exp:e                        {: RESULT = new ArrayList<Object>(); RESULT.add(e); :}
-         ;
+           | exp:e                      {: RESULT = new ArrayList<Object>(); RESULT.add(e); :}
+           ;
 
     // FLOAT declarations
 listaDeclFloat ::= listaDeclFloat COMA declFloat    {: :}
@@ -125,11 +126,17 @@ assignment ::= IDENT:i ASIG exp:e 	    	        {: RESULT = printer.assignment(s
              | IDENT:i ASIG ALL listaExp:l CLL      {: RESULT = printer.arrayInit(i, l); :}
              ;
 
-varOrNumber ::= IDENT:i				            {: RESULT = symTable.lookUp(i); :}
-              | IDENT:i AC exp:idx CC           {: RESULT = printer.loadArray(symTable.lookUp(i), idx); :}
-              | ENTERO:n              		    {: RESULT = n; :}
-              | REAL:n                          {: RESULT = n; :}
+varOrNumber ::= variable:v              {: RESULT = v; :}
+              | number:n                {: RESULT = n; :}
               ;
+
+variable ::= IDENT:i				         {: RESULT = symTable.lookUp(i); :}
+           | IDENT:i AC exp:idx CC           {: RESULT = printer.loadArray(symTable.lookUp(i), idx); :}
+           ;
+
+number ::= ENTERO:n                     {: RESULT = n; :}
+         | REAL:n                       {: RESULT = n; :}
+         ;
 
     // PRE-POST INCREMENT/DECREMENT
 prePostIncrDecr ::= incrDecrOp:op IDENT:i       {: RESULT = printer.preIncrDecr(symTable.lookUp(i), op); :} %prec PREINCR
@@ -260,3 +267,15 @@ forTo ::= FOR:forTag exp:e1         {: :}
 stepPart ::= STEP exp:e             {: RESULT = e; :}
            |                        {: RESULT = null; :}
            ;
+
+   // FOR IN
+forIn ::= FOR:forTag IDENT:i        {: :}
+          IN arrayPart:arr DO       {: RESULT = printer.forIn(i, forTag, arr); :}
+          ALL listaSent CLL         {: printer.goTo(forTag);
+                                       printer.label(((Condition) RESULT).falseTag);
+                                    :}
+        ;
+
+arrayPart ::= IDENT:arr             {: RESULT = arr; :}
+            | ALL listaExp:l CLL    {: RESULT = l; :}
+            ;
