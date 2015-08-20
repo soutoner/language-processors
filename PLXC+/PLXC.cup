@@ -35,7 +35,7 @@ non terminal         	    sent, listaSent;
 non terminal         	    declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal                whileLoop, doWhileLoop, forLoop, forIn;
 non terminal			    ifElseSent, elsePart;
-non terminal String         incrDecrOp, variable;
+non terminal String         incrDecrOp, variable, identPart;
 non terminal Condition	    cond;
 non terminal Object         exp, number, varOrNumber;
 non terminal Object 	    prePostIncrDecr, assignment, casting, arrayPart;
@@ -228,12 +228,16 @@ forLoop ::= FOR:forTag
 
 
    // FOR IN
-forIn ::= FOR:forTag variable:i         {: :}
+forIn ::= FOR:forTag identPart:i        {: :}
           IN arrayPart:arr DO           {: RESULT = printer.forIn(i, forTag, arr); :}
           sent                          {: printer.goTo(forTag);
                                            printer.label(((Condition) RESULT).falseTag);
                                         :}
         ;
+
+identPart ::= IDENT:i				    {: RESULT = symTable.lookUp(i); :}
+            | IDENT:i AC exp:idx CC     {: RESULT = symTable.lookUp(i) + "[" + idx + "]"; :}
+            ;
 
 arrayPart ::= IDENT:arr             {: RESULT = arr; :}
             | ALL listaExp:l CLL    {: RESULT = l; :}

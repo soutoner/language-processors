@@ -307,6 +307,7 @@ public class Printer {
     public Condition forIn(String id, String forTag, Object arr){
         String array = "";
         Integer size = 0;
+        String ident = (id.indexOf('[') == -1) ? id : id.substring(0, id.indexOf('['));
 
         if(arr instanceof String){ // array variable
             array = symTable.lookUp((String) arr);
@@ -314,7 +315,7 @@ public class Printer {
             if(size <= 0)
                 error("tipo incorrecto");
         } else { // explicit array
-            array = newTmp(symTable.typeOf(id));
+            array = newTmp(symTable.typeOf(ident));
             size = ((List<Object>) arr).size();
 
             int i = 0;
@@ -322,17 +323,23 @@ public class Printer {
                 rawAssignment(array, i++, exp, null);
         }
 
-        if(symTable.typeOf(id) != symTable.typeOf(array))
+        if(symTable.typeOf(ident) != symTable.typeOf(array))
             error("tipos incompatibles");
 
-        String index = newTmp(symTable.typeOf(id));
+        String index = newTmp(symTable.typeOf(ident));
 
         rawAssignment(index, null, new Integer(-1), null);
         label(forTag);
         rawTern(index, index, "+" , new Integer(1));
         Condition cond = condition(index, Condition.LOW, size);
         label(cond.trueTag);
-        rawAssignment(id, null, array, index);
+        if(id.indexOf('[') == -1){ // Simple ident
+            rawAssignment(id, null, array, index);
+        } else { // Ident style b[i]
+            String tmp = newTmp(symTable.typeOf(ident));
+            rawAssignment(tmp, null, array, index);
+            rawAssignment(id, null, tmp, null);
+        }
 
         return cond;
     }
