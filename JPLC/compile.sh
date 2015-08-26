@@ -2,4 +2,4 @@
 
 cup JPLC.cup 
 jflex JPLC.flex
-javac *.java
+javac -cp ../lib/java-cup-11b-runtime.jar *.java

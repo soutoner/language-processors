@@ -3,12 +3,14 @@
 # $1 path to the exercise
 # $2 counter if any
 correct_exercise () {
+	# create tmp directory if it doesn't exist
+	mkdir -p tmp
 	# Concat with jplcore.j both files
 	cat jplcore.j | tee tmp/Solution.j > tmp/Exercise.j;
 	# Compile solution 
 	./jplc $1 >> tmp/Solution.j;
 	# Compile exercise
-	java JPLC $1 >> tmp/Exercise.j;
+	java -cp .:../lib/java-cup-11b-runtime.jar JPLC $1 >> tmp/Exercise.j;
 	# Run jasmin on solution and execute 
 	java -jar jasmin.jar -d tmp/ tmp/Solution.j &> /dev/null;
 	solution=`java -cp tmp JPL 1`;

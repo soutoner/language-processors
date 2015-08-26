@@ -1,111 +1,135 @@
 public class Printer {
-	/* Enum for types of arithmetic operators*/
+	// Enum for types of arithmetic operators
 	public final static int ADD = 10;
 	public final static int SUB = 11;
 	public final static int MUL = 12;
 	public final static int DIV = 13;
 	public final static int USUB = 14;
-	/* Variables */
-	private static java.io.PrintStream out = JPLC.out;
-	
-	public static void method(String name){
+
+	// Variables
+	private java.io.PrintStream out;
+    private SymbolTable stack;
+
+    public Printer(){
+        this.out = JPLC.out;
+    }
+
+    public Printer(SymbolTable stack){
+        this.out = JPLC.out;
+        this.stack = stack;
+    }
+
+	// Method delcaration
+	public void method(String name){
 		out.println(".method public static " + name + "(I)I");
 	}
 
-	public static void endMethod(){
-		out.println("    .limit stack " + SymbolTable.opStack);
-		out.println("    .limit locals " + SymbolTable.localStack);
+	// End method
+	public void endMethod(){
+		out.println("    .limit stack " + stack.opStackSize());
+		out.println("    .limit locals " + stack.localStackSize());
 		out.println(".end method");
+        out.println();
 	}
 
-	public static void returnVal(String val){
-		push(val);
+	// Return
+	public void retorno(){
 		out.println("    ireturn");
 		out.println("    nop");
 	}
 
-	public static void push(String val){
-		if(val == null) return;	
-		SymbolTable.opStack++;
+	// Push
+	public void push(Object val){
 		out.println("    sipush " + val);
-	}
+        stack.incrOpStack();
+    }
+
+	// Operation
+	public void operation(int op){
+		switch(op){
+			case ADD:
+				out.println("    iadd");
+				break;
+			case SUB:
+				out.println("    isub");
+				break;
+			case MUL:
+				out.println("    imul");
+				break;
+			case DIV:
+				out.println("    idiv");
+				break;
+			case USUB:
+				push("-1");
+				out.println("    imul");
+				break;
+		}
+
+        stack.decrOpStack();
+    }
 	
-	public static void store(String val){
-		if(val == null) return;	
-		out.println("    istore " + val);
+	public void store(Object pos){
+		out.println("    istore " + pos);
+        stack.decrOpStack();
 	}
 
-	public static void dup() {
+    public void assignment(String id) {
+        dup();
+        store(stack.lookUp(id));
+    }
+
+	public void dup() {
 		out.println("    dup");
-		SymbolTable.opStack++;
+		stack.incrOpStack();
 	}
 
-	public static void assignment(String identStackPos, String exp) {
-		dup();
-		store(identStackPos);
-	}
-		
-	public static void load(String identStackPos) {
-		out.println("    iload " + identStackPos);
+    public void pop() {
+        out.println("    pop");
+        stack.decrOpStack();
+    }
+
+	public void load(Object pos) {
+		out.println("    iload " + pos);
+        stack.incrOpStack();
 	}
 
-	public static void callFunction(String ident) {
+	public void callFunction(String ident) {
 		out.println("    invokestatic JPL/" + ident + "(I)I");
 	}
 
-	public static void operation(String e1, int op, String e2){
-		switch(op){
-			case Printer.ADD:
-				out.println("    iadd");			
-				break;
-			case Printer.SUB:
-				out.println("    isub");			
-				break;
-			case Printer.MUL:
-				out.println("    imul");			
-				break;
-			case Printer.DIV:
-				out.println("    idiv");			
-				break;
-			case Printer.USUB:
-				push("-1");
-				out.println("    imul");			
-				break;
-		}
-	}
 
-	public static void goTo(String label) {
+	public void goTo(String label) {
 		out.println("    goto " + label);
 	}
 
-	public static void label(String tag) {
+	public void label(String tag) {
 		out.println(tag + ":");
-	}
+    }
 
-	public static Condition condition(String e1, int type, String e2){
+	public Condition condition(Object e1, int type, Object e2){
 		Condition tags = new Condition();
-		
+
 		switch(type){
 			/* If a < b goto trueTag, else, goto falseTag */
 			case Condition.LOW:
-				out.println("    isub");
+				operation(SUB);
 				out.println("    iflt " + tags.trueTag);
-				goTo(tags.falseTag);		
+				goTo(tags.falseTag);
 				break;
 			/* If b < a goto trueTag, else, goto falseTag */
 			case Condition.GRE:
-				out.println("    isub");
+				operation(SUB);
 				out.println("    ifgt " + tags.trueTag);
 				goTo(tags.falseTag);
 				break;
 		}
-		
+
+        stack.decrOpStack();
+
 		return tags;
 	}
 
-	public static void raw(String s) {
-		out.println(s);	
+	public void raw(String s) {
+		out.println(s);
 	}
-
-
 }

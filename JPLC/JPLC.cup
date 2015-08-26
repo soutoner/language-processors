@@ -1,9 +1,10 @@
-// PLXC - Adrian Gonzalez Leiva
+// JPLC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
 
 // Code available in the grammar actions
 action code {:
-	SymbolTable variables = new SymbolTable();	    // Variables set
+    SymbolTable stack = new SymbolTable();          // Stack
+    Printer printer = new Printer(stack);           // Variable for printing
 :}
 
 /*Terminals */
@@ -17,11 +18,12 @@ terminal Integer    ENTERO;
 terminal String     IDENT;
 
 /* Non terminals */
-non terminal         	lista_func, lista_sent;
-non terminal         	func, sent;
-non terminal		 	else_part, ident_list;
+non terminal         	listaFunc, listaSent;
+non terminal         	function, sent;
+non terminal		 	elsePart, listaIdent;
+non terminal            assig;
 non terminal Condition	cond;
-non terminal String 	exp, assig;
+non terminal Object 	exp;
 
 /* Precedence */
 precedence left  COMMA;
@@ -33,73 +35,83 @@ precedence right UMINUS;
 precedence left  ELSE;
 
 /* Grammar */
-lista_func	::= func
-			  | lista_func func
-			  ;
+listaFunc ::= function
+		  	| listaFunc function
+		  	;
 
-func		::= INT IDENT:f 						{: Printer.method(f); :}
-				AP INT IDENT:p CP					{: variables.declareMainArgument(p); :} 
-				ALL lista_sent 
-				CLL									{: Printer.endMethod(); variables.purge(); :}
-              ;
+function ::= INT IDENT:f 						{: printer.method(f); :}
+			 AP INT IDENT:p CP					{: stack.variable(p); :}
+			 sent								{: printer.endMethod();
+			  									   stack.purge();
+			  									:}
+		   ;
 
-lista_sent	::= sent
-			  | lista_sent sent
-			  ;
+sent ::= exp:e PYC								{: printer.pop(); :}
+		 // IF - ELSE (opt)
+	   | IF:endIf AP cond:c CP 					{: printer.label(c.trueTag); :}
+		 sent				 					{: printer.goTo(endIf);
+												   printer.label(c.falseTag);
+												:}
+		 elsePart								{: printer.label(endIf); :}
+		 // WHILE LOOP
+	   | WHILE:whileTag					       	{: printer.label(whileTag); :}
+		 AP cond:c CP							{: printer.label(c.trueTag); :}
+		 sent									{: printer.goTo(whileTag);
+												   printer.label(c.falseTag);
+												:}
+		 // Anonymous block
+	   | ALL 									{:  :}
+		 listaSent                              {:  :}
+		 CLL								    {:  :}
+	   | RETURN exp:e PYC  						{: printer.retorno(); :}
+       | INT listaIdent PYC						{:  :}
+	   ;
 
-sent	::= RETURN exp:e PYC  						{: Printer.returnVal(e); :}
-		  | exp:e PYC								{: Printer.raw("    pop"); :}
-			// IF - ELSE (opt)		
-		  | IF:endIf AP cond:c CP 					{: Printer.label(c.trueTag); :}
-			sent				 					{: Printer.goTo(endIf);
-													   Printer.label(c.falseTag);													
-													:}
-			else_part								{: Printer.label(endIf); :}
-			// WHILE LOOP
-		  | WHILE:whileTag					       	{: Printer.label(whileTag); :}
-			AP cond:c CP							{: Printer.label(c.trueTag); :}
-			sent									{: Printer.goTo(whileTag);	
-													   Printer.label(c.falseTag);												
-													:}
-			// Anonymous block
-		  | ALL 									{:  :}
-			lista_sent
-			CLL										{:  :}  
-			// INT Declarations         
-		  | INT ident_list PYC						{:  :}
-          ;
+listaSent ::= sent
+		 	| listaSent sent
+		 	;
 
-			// ELSE optional part
-else_part ::= ELSE sent
+// ELSE optional part
+elsePart ::= ELSE sent
 		    |
 		    ;
-						
-			// Declarations and multiple declarations
-ident_list ::= ident_list COMMA IDENT:i				{: variables.declare(i, "0"); :}
-			 | ident_list COMMA IDENT:i ASIG exp:e1	{: variables.declare(i, e1); :}						
-			 | IDENT:i								{: variables.declare(i, "0"); :}
-			 | IDENT:i ASIG exp:e1					{: variables.declare(i, e1); :}
+
+// Declarations and multiple declarations
+listaIdent ::= listaIdent COMMA IDENT:i				{: printer.push(new Integer(0));
+                                                       printer.store(stack.localStackPtr());
+                                                       stack.variable(i);
+                                                    :}
+			 | listaIdent COMMA IDENT:i ASIG exp:e	{: printer.store(stack.localStackPtr());
+                                                       stack.variable(i);
+                                                    :}
+			 | IDENT:i								{: printer.push(new Integer(0));
+			                                           printer.store(stack.localStackPtr());
+			                                           stack.variable(i);
+			                                        :}
+			 | IDENT:i ASIG exp:e					{: printer.store(stack.localStackPtr());
+                                                       stack.variable(i);
+                                                    :}
 			 ;
 			
-		// Expressions
-exp		::= exp:e1 MAS exp:e2		{: Printer.operation(e1, Printer.ADD, e2); :}
-   	      | exp:e1 MENOS exp:e2   	{: Printer.operation(e1, Printer.SUB, e2);  :}
-          | exp:e1 POR exp:e2     	{: Printer.operation(e1, Printer.MUL, e2);  :}
-          | exp:e1 DIV exp:e2     	{: Printer.operation(e1, Printer.DIV, e2);  :}
-	      | MENOS exp:e1          	{: Printer.operation(e1, Printer.USUB, ""); :}  %prec UMINUS
-          | AP exp:e1 CP          	{: Printer.push(e1); :}
-		  | assig:a 				{: Printer.push(a); :}
-		  | IDENT:i				  	{: Printer.load(variables.lookUp(i)); :}
-	      | ENTERO:n              	{: Printer.push(n.toString()); :}
-		  | IDENT:i AP exp:e CP     {: Printer.callFunction(i); :}
+// Expressions
+exp		::= exp:e1 MAS exp:e2		{: printer.operation(Printer.ADD); :}
+   	      | exp:e1 MENOS exp:e2   	{: printer.operation(Printer.SUB);  :}
+          | exp:e1 POR exp:e2     	{: printer.operation(Printer.MUL);  :}
+          | exp:e1 DIV exp:e2     	{: printer.operation(Printer.DIV);  :}
+	      | MENOS exp:e1          	{: printer.operation(Printer.USUB); :}  %prec UMINUS
+          | AP exp:e1 CP          	{: :}
+		  | assig:a 				{: :}
+		  | IDENT:i				  	{: printer.load(stack.lookUp(i)); :}
+	      | ENTERO:n              	{: printer.push(n); :}
+		  | IDENT:i AP exp:e CP     {: printer.callFunction(i); :}
 		  ;
 
-		// Assignation (not declaration)
-assig	::= IDENT:i ASIG exp:e1 	{: Printer.assignment(variables.lookUp(i), e1); :}
-		  ;
+// Assignation (not declaration)
+assig ::= IDENT:i ASIG exp:e 	    {: printer.assignment(i); :}
+		;
 		
 		// Boolean conditions
-cond	::= exp:e1 LOW exp:e2		{: RESULT = Printer.condition(e1, Condition.LOW, e2); :} 
-		  | exp:e1 GRE exp:e2		{: RESULT = Printer.condition(e1, Condition.GRE, e2); :}
+cond	::= exp:e1 LOW exp:e2		{: RESULT = printer.condition(e1, Condition.LOW, e2); :}
+		  | exp:e1 GRE exp:e2		{: RESULT = printer.condition(e1, Condition.GRE, e2); :}
 		  | AP cond:c1 CP			{: RESULT = c1; :}
 		  ;
