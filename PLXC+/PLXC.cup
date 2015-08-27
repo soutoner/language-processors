@@ -7,6 +7,8 @@ action code {:
     SymbolTable symTable = new SymbolTable();       // Symbol table
     Printer printer = new Printer(symTable);        // Variable for printing
 	int actualScope = 0;                            // Aux variable for scope
+	Object switchVar;                               // Holds switch variable
+	String switchTag;                               // Holds switch tag
 :}
 
 // Override error reporting method
@@ -23,10 +25,10 @@ terminal            	AP, CP, ALL, CLL, AC, CC;
 terminal            	ASIG, PYC, COMA, PP;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
-terminal				ELSE, PRINT, IN;
+terminal				ELSE, ELSEIF, PRINT, BREAK, IN;
 terminal                INT, FLOAT;
 terminal String			IF, WHILE, DO, FOR, ASK;
-terminal String     	IDENT;
+terminal String     	IDENT, SWITCH, CASE, DEFAULT;
 terminal Integer    	ENTERO;
 terminal Double    	    REAL;
 
@@ -35,7 +37,8 @@ non terminal         	    sent, listaSent;
 non terminal         	    declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal                whileLoop, doWhileLoop, forLoop, forIn;
 non terminal			    ifElseSent, elsePart;
-non terminal String         incrDecrOp, variable, identPart;
+non terminal                switchSent, defaultCase;
+non terminal String         incrDecrOp, variable, identPart, case, listaCase, breakPart;
 non terminal Condition	    cond;
 non terminal Object         exp, number, varOrNumber;
 non terminal Object 	    prePostIncrDecr, assignment, casting, arrayPart;
@@ -61,6 +64,7 @@ listaSent ::= sent
 
 sent ::= exp:e PYC                       {: :}
        | ifElseSent                      {: :}
+       | switchSent                      {: :}
        | whileLoop                       {: :}
        | doWhileLoop                     {: :}
        | forLoop                         {: :}
@@ -194,6 +198,35 @@ ifElseSent ::= IF:endIf             {: :}
 elsePart ::= ELSE sent
        |
        ;
+
+    // SWITCH sent
+switchSent ::= SWITCH:s AP exp:e CP         {: switchVar = e; switchTag = s; :}
+               ALL
+               listaCase:c                  {: printer.label(c); :}
+               defaultCase
+               CLL                          {: printer.label(s); :}
+             ;
+
+listaCase ::= listaCase case                {: :}
+            | case:c                        {: RESULT = c; :}
+            ;
+
+case ::= CASE:c exp:e PP                    {: RESULT = "L" + (Integer.valueOf(c.substring(1, c.length()))+1);
+                                               printer.raw("if (" + switchVar + " != " + e + ") goto " + c + ";");
+                                            :}
+         sent
+         breakPart:b                        {: printer.goTo((b != null) ? switchTag : (String) RESULT);
+                                               printer.label(c);
+                                            :}
+        ;
+
+breakPart ::= BREAK PYC             {: RESULT = "break"; :}
+            |                       {: RESULT = null; :}
+            ;
+
+defaultCase ::= DEFAULT:d PP sent
+              |
+              ;
 
     // WHILE loop
 whileLoop ::= WHILE:whileTag		{: printer.label(whileTag); :}

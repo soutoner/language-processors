@@ -18,7 +18,6 @@ import java_cup.runtime.*;
 
 LineTerminator = \r|\n|\r\n
 InputCharacter = [^\r\n]
-WhiteSpace     = {LineTerminator} | [ \t\f]
 
 /* Comments */
 Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {HashComment}
@@ -67,13 +66,18 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "||"                 		{ return new Symbol(sym.OR); }
 /* Code */   
     "if"                 		{ return new Symbol(sym.IF, newTag()); }
+    "else if"                   { return new Symbol(sym.ELSEIF); }
     "else"               		{ return new Symbol(sym.ELSE); }
+    "switch"               		{ return new Symbol(sym.SWITCH, newTag()); }
     "while"              		{ return new Symbol(sym.WHILE, newTag()); }
     "do"                 		{ return new Symbol(sym.DO, newTag()); }
     "for"                		{ return new Symbol(sym.FOR, newTag()); }
     "print"              		{ return new Symbol(sym.PRINT); }
     "int"              		    { return new Symbol(sym.INT); }
     "float"              		{ return new Symbol(sym.FLOAT); }
+    "break"              		{ return new Symbol(sym.BREAK); }
+    "case"              		{ return new Symbol(sym.CASE, newTag()); }
+    "default"              		{ return new Symbol(sym.DEFAULT, newTag()); }
     "in"              		    { return new Symbol(sym.IN); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
