@@ -20,12 +20,12 @@ parser code {:
 /* Terminals */
 terminal            	MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
 terminal            	AP, CP, ALL, CLL, AC, CC;
-terminal            	ASIG, PYC, COMA;
+terminal            	ASIG, PYC, COMA, PP;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
 terminal				ELSE, PRINT, IN;
 terminal                INT, FLOAT;
-terminal String			IF, WHILE, DO, FOR;
+terminal String			IF, WHILE, DO, FOR, ASK;
 terminal String     	IDENT;
 terminal Integer    	ENTERO;
 terminal Double    	    REAL;
@@ -106,17 +106,18 @@ declFloat ::= IDENT:i                       {: symTable.declare(i, actualScope, 
               ASIG ALL listaExp:l CLL       {: printer.arrayInit(i, l); :}
             ;
 
-exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
-      | exp:e1 MENOS exp:e2   		    {: RESULT = printer.tern(e1, Printer.SUB, e2); :}
-      | exp:e1 POR exp:e2     		    {: RESULT = printer.tern(e1, Printer.MUL, e2); :}
-      | exp:e1 DIV exp:e2     		    {: RESULT = printer.tern(e1, Printer.DIV, e2); :}
-      | exp:e1 MOD exp:e2     		    {: RESULT = printer.mod(e1,e2); :}
-      | MENOS exp:e          		    {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
-      | AP exp:e CP          		    {: RESULT = e; :}
-      | assignment:a                    {: RESULT = a; :}
-      | varOrNumber:n                   {: RESULT = n; :}
-      | prePostIncrDecr:n               {: RESULT = n; :}
-      | casting:n                       {: RESULT = n; :}
+exp ::= exp:e1 MAS exp:e2		                {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
+      | exp:e1 MENOS exp:e2   		            {: RESULT = printer.tern(e1, Printer.SUB, e2); :}
+      | exp:e1 POR exp:e2     		            {: RESULT = printer.tern(e1, Printer.MUL, e2); :}
+      | exp:e1 DIV exp:e2     		            {: RESULT = printer.tern(e1, Printer.DIV, e2); :}
+      | exp:e1 MOD exp:e2     		            {: RESULT = printer.mod(e1,e2); :}
+      | MENOS exp:e          		            {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
+      | AP exp:e CP          		            {: RESULT = e; :}
+      | assignment:a                            {: RESULT = a; :}
+      | varOrNumber:n                           {: RESULT = n; :}
+      | prePostIncrDecr:n                       {: RESULT = n; :}
+      | casting:n                               {: RESULT = n; :}
+      | AP cond:c CP ASK:tag exp:e1 PP exp:e2   {: RESULT = printer.askOperator(c, e1, e2, tag); :}
       ;
 
 assignment ::= IDENT:i ASIG exp:e 	    	            {: RESULT = printer.assignment(symTable.lookUp(i), e); :}

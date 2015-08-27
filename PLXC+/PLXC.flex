@@ -14,7 +14,19 @@ import java_cup.runtime.*;
 
 /*  Declarations */ 
    
-%cup 
+%cup
+
+LineTerminator = \r|\n|\r\n
+InputCharacter = [^\r\n]
+WhiteSpace     = {LineTerminator} | [ \t\f]
+
+/* Comments */
+Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {HashComment}
+
+TraditionalComment 	= "/*" [^*] ~"*/" | "/*" "*"+ "/"
+EndOfLineComment 	= "//" {InputCharacter}* {LineTerminator}?
+DocumentationComment    = "/*" "*"+ [^/*] ~"*/"
+HashComment		= "#" {InputCharacter}* {LineTerminator}?
 
 %%   
 
@@ -26,6 +38,7 @@ import java_cup.runtime.*;
     "*"                  		{ return new Symbol(sym.POR); }
     "/"                  		{ return new Symbol(sym.DIV); }
     "%"                  		{ return new Symbol(sym.MOD); }
+    "?"                  		{ return new Symbol(sym.ASK, newTag()); }
     "++"                  		{ return new Symbol(sym.INCR); }
     "--"                  		{ return new Symbol(sym.DECR); }
 /* Precedence */
@@ -38,6 +51,7 @@ import java_cup.runtime.*;
 /* Delimiter */
     ";"                  		{ return new Symbol(sym.PYC); }
     ","                  		{ return new Symbol(sym.COMA); }
+    ":"                  		{ return new Symbol(sym.PP); }
 /* Assignations */
     "="                  		{ return new Symbol(sym.ASIG); }
 /* Comparisons */
@@ -64,6 +78,8 @@ import java_cup.runtime.*;
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
     [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?   { return new Symbol(sym.REAL, new Double(yytext())); }
+/* Comments */
+    {Comment}					{ }
 /* Identifiers */
     [_a-zA-Z$][_a-zA-Z0-9$]*    { return new Symbol(sym.IDENT, yytext()); }
 /* Others */
