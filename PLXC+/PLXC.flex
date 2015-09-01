@@ -71,6 +71,9 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "print"              		{ return new Symbol(sym.PRINT); }
     "int"              		    { return new Symbol(sym.INT); }
     "float"              		{ return new Symbol(sym.FLOAT); }
+    "to"              		    { return new Symbol(sym.TO, newTag()); }
+    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
+    "step"              		{ return new Symbol(sym.STEP); }
     "in"              		    { return new Symbol(sym.IN); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }

@@ -95,7 +95,10 @@ public class SymbolTable {
                     return Occurrence.FLOAT;
                 }
             } else { // Ident, fetch closer occurrence type
-                return symTable.get(o).get(0).getType();
+                if(((String) o).matches(".*_[0-9]+$")) // Variable in a inner scope
+                    return symTable.get(((String) o).replaceAll("_[0-9]+$", "")).get(0).getType();
+                else
+                    return symTable.get(o).get(0).getType();
             }
         }
     }
