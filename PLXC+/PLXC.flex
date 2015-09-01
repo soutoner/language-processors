@@ -64,9 +64,8 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "!"                  		{ return new Symbol(sym.NOT); }
     "&&"                 		{ return new Symbol(sym.AND); }
     "||"                 		{ return new Symbol(sym.OR); }
-/* Code */   
+/* Code */
     "if"                 		{ return new Symbol(sym.IF, newTag()); }
-    "else if"                   { return new Symbol(sym.ELSEIF); }
     "else"               		{ return new Symbol(sym.ELSE); }
     "switch"               		{ return new Symbol(sym.SWITCH, newTag()); }
     "while"              		{ return new Symbol(sym.WHILE, newTag()); }

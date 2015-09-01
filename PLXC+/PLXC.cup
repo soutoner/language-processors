@@ -25,7 +25,7 @@ terminal            	AP, CP, ALL, CLL, AC, CC;
 terminal            	ASIG, PYC, COMA, PP;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
-terminal				ELSE, ELSEIF, PRINT, BREAK, IN;
+terminal				ELSE, PRINT, BREAK, IN;
 terminal                INT, FLOAT;
 terminal String			IF, WHILE, DO, FOR, ASK;
 terminal String     	IDENT, SWITCH, CASE, DEFAULT;
