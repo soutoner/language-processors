@@ -14,7 +14,18 @@ import java_cup.runtime.*;
 
 /*  Declarations */ 
    
-%cup 
+%cup
+
+LineTerminator = \r|\n|\r\n
+InputCharacter = [^\r\n]
+
+/* Comments */
+Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {HashComment}
+
+TraditionalComment 	= "/*" [^*] ~"*/" | "/*" "*"+ "/"
+EndOfLineComment 	= "//" {InputCharacter}* {LineTerminator}?
+DocumentationComment    = "/*" "*"+ [^/*] ~"*/"
+HashComment		= "#" {InputCharacter}* {LineTerminator}?
 
 %%   
 
@@ -64,6 +75,8 @@ import java_cup.runtime.*;
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
     [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?   { return new Symbol(sym.REAL, new Double(yytext())); }
+/* Comments */
+    {Comment}					{ }
 /* Identifiers */
     [_a-zA-Z$][_a-zA-Z0-9$]*    { return new Symbol(sym.IDENT, yytext()); }
 /* Others */

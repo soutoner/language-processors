@@ -14,7 +14,7 @@ import java_cup.runtime.*;
 
 /*  Declarations */ 
    
-%cup 
+%cup
 
 %%   
 
