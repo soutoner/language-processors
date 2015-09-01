@@ -37,6 +37,7 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "*"                  		{ return new Symbol(sym.POR); }
     "/"                  		{ return new Symbol(sym.DIV); }
     "%"                  		{ return new Symbol(sym.MOD); }
+    "?"                  		{ return new Symbol(sym.ASK, newTag()); }
     "++"                  		{ return new Symbol(sym.INCR); }
     "--"                  		{ return new Symbol(sym.DECR); }
 /* Precedence */
@@ -49,6 +50,7 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
 /* Delimiter */
     ";"                  		{ return new Symbol(sym.PYC); }
     ","                  		{ return new Symbol(sym.COMA); }
+    ":"                  		{ return new Symbol(sym.PP); }
 /* Assignations */
     "="                  		{ return new Symbol(sym.ASIG); }
 /* Comparisons */
@@ -62,9 +64,10 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "!"                  		{ return new Symbol(sym.NOT); }
     "&&"                 		{ return new Symbol(sym.AND); }
     "||"                 		{ return new Symbol(sym.OR); }
-/* Code */   
+/* Code */
     "if"                 		{ return new Symbol(sym.IF, newTag()); }
     "else"               		{ return new Symbol(sym.ELSE); }
+    "switch"               		{ return new Symbol(sym.SWITCH, newTag()); }
     "while"              		{ return new Symbol(sym.WHILE, newTag()); }
     "do"                 		{ return new Symbol(sym.DO, newTag()); }
     "for"                		{ return new Symbol(sym.FOR, newTag()); }
@@ -74,6 +77,9 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "to"              		    { return new Symbol(sym.TO, newTag()); }
     "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
     "step"              		{ return new Symbol(sym.STEP); }
+    "break"              		{ return new Symbol(sym.BREAK); }
+    "case"              		{ return new Symbol(sym.CASE, newTag()); }
+    "default"              		{ return new Symbol(sym.DEFAULT, newTag()); }
     "in"              		    { return new Symbol(sym.IN); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }

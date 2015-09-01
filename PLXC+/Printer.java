@@ -241,6 +241,20 @@ public class Printer {
      * CONDITIONS
      */
 
+    // Ask operator
+    public String askOperator(Condition c, Object e1, Object e2, String askTag){
+        String tmp = newTmp(symTable.typeOf(e1));
+
+        label(c.trueTag);
+        rawAssignment(tmp, null, e1, null);
+        goTo(askTag);
+        label(c.falseTag);
+        rawAssignment(tmp, null, e2, null);
+        label(askTag);
+
+        return tmp;
+    }
+
 	// Conditions
 	public Condition condition(Object e1, int type, Object e2){
 		Condition tags = new Condition();

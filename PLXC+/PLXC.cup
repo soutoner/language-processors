@@ -7,6 +7,8 @@ action code {:
     SymbolTable symTable = new SymbolTable();       // Symbol table
     Printer printer = new Printer(symTable);        // Variable for printing
 	int actualScope = 0;                            // Aux variable for scope
+	Object switchVar;                               // Holds switch variable
+	String switchTag;                               // Holds switch tag
 :}
 
 // Override error reporting method
@@ -20,13 +22,13 @@ parser code {:
 /* Terminals */
 terminal            	MAS, MENOS, POR, DIV, MOD, UMINUS, INCR, DECR, PREINCR;
 terminal            	AP, CP, ALL, CLL, AC, CC;
-terminal            	ASIG, PYC, COMA;
+terminal            	ASIG, PYC, COMA, PP;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
 terminal				NOT, AND, OR;
-terminal				ELSE, PRINT, STEP, IN;
+terminal				ELSE, PRINT, STEP, BREAK, IN;
 terminal                INT, FLOAT;
-terminal String			IF, WHILE, DO, FOR, TO, DOWNTO;
-terminal String     	IDENT;
+terminal String			IF, WHILE, DO, FOR, TO, DOWNTO, ASK;
+terminal String     	IDENT, SWITCH, CASE, DEFAULT;
 terminal Integer    	ENTERO;
 terminal Double    	    REAL;
 
@@ -35,7 +37,8 @@ non terminal         	    sent, listaSent;
 non terminal         	    declaSent, declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal                whileLoop, doWhileLoop, forLoop, forPascal, forIn;
 non terminal			    ifElseSent, elsePart;
-non terminal String         incrDecrOp, variable, identPart;
+non terminal                switchSent, defaultCase;
+non terminal String         incrDecrOp, variable, identPart, case, listaCase, breakPart;
 non terminal Condition	    cond;
 non terminal Object         exp, number, varOrNumber;
 non terminal Object 	    prePostIncrDecr, assignment, casting, stepPart, arrayPart;
@@ -61,6 +64,7 @@ listaSent ::= sent
 
 sent ::= exp:e PYC                       {: :}
        | ifElseSent                      {: :}
+       | switchSent                      {: :}
        | whileLoop                       {: :}
        | doWhileLoop                     {: :}
        | forLoop                         {: :}
@@ -107,17 +111,18 @@ declFloat ::= IDENT:i                       {: symTable.declare(i, actualScope, 
               ASIG ALL listaExp:l CLL       {: printer.arrayInit(i, l); :}
             ;
 
-exp ::= exp:e1 MAS exp:e2		        {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
-      | exp:e1 MENOS exp:e2   		    {: RESULT = printer.tern(e1, Printer.SUB, e2); :}
-      | exp:e1 POR exp:e2     		    {: RESULT = printer.tern(e1, Printer.MUL, e2); :}
-      | exp:e1 DIV exp:e2     		    {: RESULT = printer.tern(e1, Printer.DIV, e2); :}
-      | exp:e1 MOD exp:e2     		    {: RESULT = printer.mod(e1,e2); :}
-      | MENOS exp:e          		    {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
-      | AP exp:e CP          		    {: RESULT = e; :}
-      | assignment:a                    {: RESULT = a; :}
-      | varOrNumber:n                   {: RESULT = n; :}
-      | prePostIncrDecr:n               {: RESULT = n; :}
-      | casting:n                       {: RESULT = n; :}
+exp ::= exp:e1 MAS exp:e2		                {: RESULT = printer.tern(e1, Printer.ADD, e2); :}
+      | exp:e1 MENOS exp:e2   		            {: RESULT = printer.tern(e1, Printer.SUB, e2); :}
+      | exp:e1 POR exp:e2     		            {: RESULT = printer.tern(e1, Printer.MUL, e2); :}
+      | exp:e1 DIV exp:e2     		            {: RESULT = printer.tern(e1, Printer.DIV, e2); :}
+      | exp:e1 MOD exp:e2     		            {: RESULT = printer.mod(e1,e2); :}
+      | MENOS exp:e          		            {: RESULT = printer.tern(new Integer(0), Printer.SUB, e); :}  %prec UMINUS
+      | AP exp:e CP          		            {: RESULT = e; :}
+      | assignment:a                            {: RESULT = a; :}
+      | varOrNumber:n                           {: RESULT = n; :}
+      | prePostIncrDecr:n                       {: RESULT = n; :}
+      | casting:n                               {: RESULT = n; :}
+      | AP cond:c CP ASK:tag exp:e1 PP exp:e2   {: RESULT = printer.askOperator(c, e1, e2, tag); :}
       ;
 
 assignment ::= IDENT:i ASIG exp:e 	    	            {: RESULT = printer.assignment(symTable.lookUp(i), e); :}
@@ -194,6 +199,35 @@ ifElseSent ::= IF:endIf             {: :}
 elsePart ::= ELSE sent
        |
        ;
+
+    // SWITCH sent
+switchSent ::= SWITCH:s AP exp:e CP         {: switchVar = e; switchTag = s; :}
+               ALL
+               listaCase:c                  {: printer.label(c); :}
+               defaultCase
+               CLL                          {: printer.label(s); :}
+             ;
+
+listaCase ::= listaCase case                {: :}
+            | case:c                        {: RESULT = c; :}
+            ;
+
+case ::= CASE:c exp:e PP                    {: RESULT = "L" + (Integer.valueOf(c.substring(1, c.length()))+1);
+                                               printer.raw("if (" + switchVar + " != " + e + ") goto " + c + ";");
+                                            :}
+         sent
+         breakPart:b                        {: printer.goTo((b != null) ? switchTag : (String) RESULT);
+                                               printer.label(c);
+                                            :}
+        ;
+
+breakPart ::= BREAK PYC             {: RESULT = "break"; :}
+            |                       {: RESULT = null; :}
+            ;
+
+defaultCase ::= DEFAULT:d PP sent
+              |
+              ;
 
     // WHILE loop
 whileLoop ::= WHILE:whileTag		{: printer.label(whileTag); :}
