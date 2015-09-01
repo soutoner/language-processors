@@ -24,13 +24,19 @@ Personal work on the subject of language Processors. Contains original exercises
 #### Other files inside each folder:
 
  * **PLC**:  PL compiler.
-	 * **Condition**.java: auxiliary Java class for conditions.
-	 * **Printer.java**: auxiliary Java class for printing purposes.
+	 * **Condition**.java: manage conditions
+	 * **Printer.java**: generating (printing) code purposes.
 	 
  * **PLXC**: PL+ compiler (support more features).
-	 * **Condition**.java: auxiliary Java class for conditions.
-	 * **Printer.java**: auxiliary Java class for printing purposes.
+	 * **Condition**.java: manage conditions.
+	 * **Printer.java**: generating (printing) code purposes.
 	 * **SymbolTable.java**: auxiliary Java class that mantains the Symbol Table (variables scopes).
+
+ * **PLXC+**: PLX+ compiler. Support more features than the PDF: switch case, and ask operator. Backwards compatible.
+     * **Condition**.java: manage conditions.
+     * **Printer.java**: generating (printing) code purposes.
+     * **SymbolTable.java**: maintains the Symbol Table (variables scopes).
+     * **Occurrence.java**: holds the inner structure of the SymbolTable [scope, type, size] of an identifier.
 
  * **JPLC**: Java "ByteCode" compiler (very reduced).
 	 * **Condition**.java: auxiliary Java class for conditions.
