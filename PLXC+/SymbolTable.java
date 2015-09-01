@@ -47,7 +47,7 @@ public class SymbolTable {
         List<Occurrence> occurrences = symTable.get(id); // occurrences of an identifier
 
         if (occurrences == null) { // variable non declared, throw error
-            out.error("variable \'" + id + "\' no decluarada");
+            out.error("variable \'" + id + "\' no declarada");
             return null;
         } else { // identifier is declared, fetch closer occurrence
             if (occurrences.size() > 1) { // variable declared more than one, append suffix
