@@ -3,22 +3,17 @@
 # $1 path to the exercise
 # $2 counter if any
 correct_exercise () {
-	# create tmp directory if it doesn't exist
-	mkdir -p tmp
-	# Concat with jplcore.j both files
-	cat jplcore.j | tee tmp/Solution.j > tmp/Exercise.j;
-	# Compile solution 
-	./jplc $1 >> tmp/Solution.j;
+	# Compile solution
+	./jplc $1 solution.j;
 	# Compile exercise
-	java -cp .:../lib/java-cup-11b-runtime.jar JPLC $1 >> tmp/Exercise.j;
-	# Run jasmin on solution and execute 
-	java -jar jasmin.jar -d tmp/ tmp/Solution.j &> /dev/null;
-	solution=`java -cp tmp JPL 1`;
-	rm tmp/JPL.class;
-	# Run jasmin on exercise and execute 
-	java -jar jasmin.jar -d tmp/ tmp/Exercise.j &> /dev/null;
-	exercise=`java -cp tmp JPL 1`;
+	java -cp .:../lib/java-cup-11b-runtime.jar JPLC $1 exercise.j;
+	# Run solution and execute
+	solution=`./jpl solution 1`;
+	# Run jasmin on exercise and execute
+	exercise=`./jpl exercise 1`;
 	name=$(basename "$1")
+	# Remove files
+	rm -f solution.j exercise.j;
 
 	if [[ $solution == $exercise ]]
 	then
@@ -31,7 +26,6 @@ correct_exercise () {
 if [ $1 ]
 then
 	correct_exercise "jplc-test/${1}";	
-	rm -rf tmp/*;
 else
 	count=1;
 
@@ -41,8 +35,6 @@ else
 
 		count=$((count+1));
 	done
-
-	rm -rf tmp/*;
 fi
 
 

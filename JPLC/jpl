@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cat jplcore.j $1.j > $1.j_
+java -jar jasmin.jar  $1.j_ > $1.tmp_
+rm -f $1.*_
+java JPL $2
