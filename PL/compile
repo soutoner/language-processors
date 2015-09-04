@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd src
+cup ../parser/PLC.cup
+jflex -d . ../tokenizer/PLC.flex
+javac -cp .:../../lib/java-cup-11b-runtime.jar -d ../bin *.java

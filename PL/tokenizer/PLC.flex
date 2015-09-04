@@ -2,19 +2,20 @@ import java_cup.runtime.*;
 
 %%
 
-/* Code (tag handling) */
-
-%{
-	public static int actualTag = 0;
-
-	public static String newTag(){
-		return "L"+(actualTag++);	
-	}
-%}
-
-/*  Declarations */ 
+/*  Declarations */
    
-%cup 
+%cup
+
+LineTerminator = \r|\n|\r\n
+InputCharacter = [^\r\n]
+
+/* Comments */
+Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {HashComment}
+
+TraditionalComment 	= "/*" [^*] ~"*/" | "/*" "*"+ "/"
+EndOfLineComment 	= "//" {InputCharacter}* {LineTerminator}?
+DocumentationComment    = "/*" "*"+ [^/*] ~"*/"
+HashComment		= "#" {InputCharacter}* {LineTerminator}?
 
 %%   
 
@@ -46,16 +47,18 @@ import java_cup.runtime.*;
     "&&"                 		{ return new Symbol(sym.AND); }
     "||"                 		{ return new Symbol(sym.OR); }
 /* Code */   
-    "if"                 		{ return new Symbol(sym.IF, newTag()); }
+    "if"                 		{ return new Symbol(sym.IF); }
     "else"               		{ return new Symbol(sym.ELSE); }
-    "while"              		{ return new Symbol(sym.WHILE, newTag()); }
-    "do"                 		{ return new Symbol(sym.DO, newTag()); }
-    "for"                		{ return new Symbol(sym.FOR, newTag()); }
+    "while"              		{ return new Symbol(sym.WHILE); }
+    "do"                 		{ return new Symbol(sym.DO); }
+    "for"                		{ return new Symbol(sym.FOR); }
     "print"              		{ return new Symbol(sym.PRINT); }
 /* Numbers */
     0|[1-9][0-9]*        		{ return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
+/* Comments */
+    {Comment}					{ }
 /* Identifiers */
-    [_a-zA-Z$][_a-zA-Z0-9$]*	        { return new Symbol(sym.IDENT, yytext()); }
+    [_a-zA-Z$][_a-zA-Z0-9$]*    { return new Symbol(sym.IDENT, yytext()); }
 /* Others */
     \ |\t\f              		{  }  
     [^]                  		{ /*throw new Error("Illegal character <"+yytext()+">");*/ }

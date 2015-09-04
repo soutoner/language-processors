@@ -1,10 +1,11 @@
 import java.io.*;
-   
+import absyntax.AbstractSyntaxTree;
+
 public class PLC {
 
 	public static PrintStream out;
 
-	static public void main(String argv[]) {    
+	static public void main(String argv[]) {
 		try {
 			Reader in = new InputStreamReader(System.in);
 			out = System.out;
@@ -17,9 +18,8 @@ public class PLC {
 			if(argv.length > 1)
 				out = new PrintStream(new FileOutputStream(argv[1]));
 
-			parser p = new parser(new Yylex(in));
+			parser p = new parser(new Yylex(in), new AbstractSyntaxTree(out));
 			Object result = p.parse().value;
-		
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
