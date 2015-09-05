@@ -5,15 +5,15 @@ import absyntax.exp.Exp;
 
 public final class Print extends Sent {
 
-    private final Exp expr;
+    private final Exp exp;
 
     public Print(Exp e){
-        this.expr = e;
+        this.exp = e;
     }
 
     @Override
     public Object eval() {
-        Generator.getInstance().out().println("    print " + expr.eval() + ";");
+        Generator.getInstance().out().println("    print " + exp.eval() + ";");
 
         return null;
     }

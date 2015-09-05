@@ -1,6 +1,7 @@
 // PLC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
 import java.io.PrintStream;
+import java.util.*;
 import absyntax.exp.*;
 import absyntax.sent.*;
 
@@ -24,8 +25,8 @@ terminal Integer    	ENTERO;
 terminal String     	IDENT;
 
 /* Non terminals */
-non terminal         	listaSent;
-non terminal Node		sent;
+non terminal List<Sent> listaSent;
+non terminal Sent		sent;
 non terminal			elsePart;
 non terminal Object		cond;
 non terminal Exp		exp;
@@ -39,28 +40,28 @@ precedence left  		ELSE;
 precedence right 		NOT;
 
 /* Grammar */
-listaSent ::= sent:s				{: parser.tree.setRoot(s); :}
-			| listaSent sent
+listaSent ::= sent:s				{: RESULT = new ArrayList<Sent>(); RESULT.add(s); parser.tree.setRoot(new ListaSent(RESULT)); :}
+			| listaSent:l sent:s    {: RESULT = l; RESULT.add(s); parser.tree.setRoot(new ListaSent(RESULT)); :}
 			;
 
-sent  ::= exp:e PYC					{: RESULT = e; :}
+sent  ::= exp:e PYC					{: RESULT = new ExpSent(e); :}
 		| IF AP cond CP sent
 		| IF AP cond CP sent ELSE sent
 		| WHILE AP cond CP sent
 		| DO sent WHILE AP cond CP PYC
 		| FOR AP exp PYC cond PYC exp CP sent
 		| PRINT AP exp:e CP PYC		{: RESULT = new Print(e); :}
-		| ALL listaSent CLL
+		| ALL listaSent:l CLL		{: RESULT = new ListaSent(l); :}
 		;
 
 exp   ::= exp:e1 MAS exp:e2			{: RESULT = new BinaryOp('+', e1, e2); :}
 		| exp:e1 MENOS exp:e2		{: RESULT = new BinaryOp('-', e1, e2); :}
 		| exp:e1 POR exp:e2			{: RESULT = new BinaryOp('*', e1, e2); :}
 		| exp:e1 DIV exp:e2			{: RESULT = new BinaryOp('/', e1, e2); :}
-		| MENOS exp:e				{: RESULT = new BinaryOp('-', new Int(0), e); :}
+		| MENOS exp:e				{: RESULT = new BinaryOp('-', new Int(0), e); :} %prec UMINUS
 		| AP exp:e CP				{: RESULT = e; :}
-		| IDENT ASIG exp
-		| IDENT
+		| IDENT:i ASIG exp:e		{: RESULT = new AssignExp(new Ident(i), e); :}
+		| IDENT:i					{: RESULT = new Ident(i); :}
 		| ENTERO:n					{: RESULT = new Int(n); :}
 		;
 

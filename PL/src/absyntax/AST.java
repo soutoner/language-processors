@@ -4,9 +4,7 @@ public class AST {
 
     private Node root;
 
-    public AST(){
-
-    }
+    public AST(){}
 
     public Node getRoot(){
         return root;
@@ -19,5 +17,4 @@ public class AST {
     public void eval(){
         root.eval();
     }
-
 }
