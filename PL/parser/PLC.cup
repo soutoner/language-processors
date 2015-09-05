@@ -1,14 +1,15 @@
 // PLC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
-import absyntax.AbstractSyntaxTree;
+import java.io.PrintStream;
+import absyntax.exp.*;
+import absyntax.sent.*;
 
 parser code {:
-	private AbstractSyntaxTree tree;
+	public AST tree = new AST();			// Abstract Syntax Tree associated
 
-    public parser(Yylex s, AbstractSyntaxTree t){
-    	this(s);
-    	this.tree = t;
-   	}
+	public AST getAST(){
+		return tree;
+	}
 :}
 
 /*Terminals */
@@ -24,10 +25,10 @@ terminal String     	IDENT;
 
 /* Non terminals */
 non terminal         	listaSent;
-non terminal         	sent;
+non terminal Node		sent;
 non terminal			elsePart;
 non terminal Object		cond;
-non terminal Object 	exp;
+non terminal Exp		exp;
 
 /* Precedence */
 precedence left  		MAS, MENOS;
@@ -38,29 +39,29 @@ precedence left  		ELSE;
 precedence right 		NOT;
 
 /* Grammar */
-listaSent ::= sent
+listaSent ::= sent:s				{: parser.tree.setRoot(s); :}
 			| listaSent sent
 			;
 
-sent  ::= exp PYC
+sent  ::= exp:e PYC					{: RESULT = e; :}
 		| IF AP cond CP sent
 		| IF AP cond CP sent ELSE sent
 		| WHILE AP cond CP sent
 		| DO sent WHILE AP cond CP PYC
 		| FOR AP exp PYC cond PYC exp CP sent
-		| PRINT AP exp CP PYC
+		| PRINT AP exp:e CP PYC		{: RESULT = new Print(e); :}
 		| ALL listaSent CLL
 		;
 
-exp   ::= exp MAS exp
-		| exp MENOS exp
-		| exp POR exp
-		| exp DIV exp
-		| MENOS exp
-		| AP exp CP
+exp   ::= exp:e1 MAS exp:e2			{: RESULT = new BinaryOp('+', e1, e2); :}
+		| exp:e1 MENOS exp:e2		{: RESULT = new BinaryOp('-', e1, e2); :}
+		| exp:e1 POR exp:e2			{: RESULT = new BinaryOp('*', e1, e2); :}
+		| exp:e1 DIV exp:e2			{: RESULT = new BinaryOp('/', e1, e2); :}
+		| MENOS exp:e				{: RESULT = new BinaryOp('-', new Int(0), e); :}
+		| AP exp:e CP				{: RESULT = e; :}
 		| IDENT ASIG exp
 		| IDENT
-		| ENTERO
+		| ENTERO:n					{: RESULT = new Int(n); :}
 		;
 
 cond  ::= exp EQ exp

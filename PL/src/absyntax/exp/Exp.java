@@ -1,6 +1,7 @@
 package absyntax.exp;
 
-public abstract class Exp{
+import absyntax.Node;
 
-    public abstract Object eval();
+public abstract class Exp extends Node {
+
 }

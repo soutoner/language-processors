@@ -1,5 +1,6 @@
+package absyntax;
+
 import java.io.*;
-import absyntax.AbstractSyntaxTree;
 
 public class PLC {
 
@@ -18,8 +19,9 @@ public class PLC {
 			if(argv.length > 1)
 				out = new PrintStream(new FileOutputStream(argv[1]));
 
-			parser p = new parser(new Yylex(in), new AbstractSyntaxTree(out));
-			Object result = p.parse().value;
+			parser p = new parser(new Yylex(in));
+			p.parse();
+			p.getAST().eval();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

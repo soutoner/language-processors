@@ -1,3 +1,5 @@
+package absyntax;
+
 import java_cup.runtime.*;
 
 %%
