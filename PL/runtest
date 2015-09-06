@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Usage: `./runtest` will run all the tests under the `test` directory
+#		 `./runtest test/NAME.pl` will run only the given test
+
+passed_test=0;
+
+# $1 path to the exercise
+# $2 counter if any
+correct_exercise () {
+
+	solution=`bin/plc $1 | bin/ctd`;
+	exercise=`java -cp bin:../lib/java-cup-11b-runtime.jar PLC $1 | bin/ctd`;
+	name=$(basename "$1")
+
+	if [[ $solution == $exercise ]]
+	then
+		echo "${2-1}. ${name} Ok!";
+		passed_test=$((passed_test+1));
+	else
+		echo "${2-1}. ${name} ERROR! Expected: ${solution} Given: ${exercise}";
+	fi
+}
+
+if [ $1 ]
+then
+	correct_exercise $1
+else
+	count=0;
+
+	for filename in test/*;
+	do
+		correct_exercise $filename $count
+
+		count=$((count+1));
+	done
+
+	echo "Nº of Ok!: ${passed_test}/${count}";
+fi

@@ -19,7 +19,6 @@ public class PLC {
 
 			parser p = new parser(new Yylex(in));
 			Object result = p.parse().value;
-		
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
