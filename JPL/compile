@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd src
+cup ../parser/JPLC.cup
+jflex -d . ../tokenizer/JPLC.flex
+javac -cp .:../../lib/java-cup-11b-runtime.jar -d ../bin *.java
+

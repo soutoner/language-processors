@@ -1,0 +1,102 @@
+// JPLC - Adrian Gonzalez Leiva
+import java_cup.runtime.*;
+
+// Code available in the grammar actions
+action code {:
+    SymbolTable s = Generator.getInstance().symbolTable();	// Symbol Table
+    Printer p = new Printer();         						// Variable for printing
+:}
+
+/*Terminals */
+terminal            	MAS, MENOS, POR, DIV, UMINUS;
+terminal            	AP, CP, ALL, CLL;
+terminal            	ASIG, PYC, COMA;
+terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
+terminal				ELSE, INT, RETURN;
+terminal String			IF, WHILE;
+terminal Integer    	ENTERO;
+terminal String     	IDENT;
+
+/* Non terminals */
+non terminal         	listaFunc, listaSent;
+non terminal         	function, sent;
+non terminal			decl, listaDecl;
+non terminal		 	elsePart;
+non terminal Condition	cond;
+non terminal Object 	exp;
+
+/* Precedence */
+precedence right        ASIG;
+precedence left         EQ, NEQ;
+precedence left         LOW, LOE, GRE, GOE;
+precedence left         MAS, MENOS;
+precedence left         POR, DIV;
+precedence right        UMINUS;
+precedence left         ELSE;
+
+/* Grammar */
+listaFunc ::= function
+		  	| listaFunc function
+		  	;
+
+function ::= INT IDENT:f 						{: p.method(f); :}
+			 AP INT IDENT:param CP				{: s.declare(param); :}
+			 sent								{: p.endMethod(); s.purge(); :}
+		   ;
+
+sent ::= exp:e PYC								{: p.pop(); :}
+
+		 // IF - ELSE (opt)
+	   | IF:endIf AP cond:c CP 					{: p.label(c.getTrueLabel()); :}
+		 sent				 					{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
+		 elsePart								{: p.label(endIf); :}
+
+		 // WHILE LOOP
+	   | WHILE:whileLabel					    {: p.label(whileLabel); :}
+		 AP cond:c CP							{: p.label(c.getTrueLabel()); :}
+		 sent									{: p.goTo(whileLabel); p.label(c.getFalseLabel()); :}
+
+		 // Anonymous block
+	   | ALL listaSent CLL
+	   | RETURN exp PYC  						{: p.retorno(); :}
+       | INT listaDecl PYC						{:  :}
+	   ;
+
+listaSent ::= sent
+		 	| listaSent sent
+		 	;
+
+// ELSE optional part
+elsePart  ::= ELSE sent
+			|
+			;
+
+// Declarations and multiple declarations
+listaDecl ::= listaDecl COMA decl
+            | decl
+            ;
+
+decl ::= IDENT:i                        {: p.push(0); p.store(s.declare(i)); :}
+       | IDENT:i ASIG exp:e             {: p.store(s.declare(i)); :}
+       ;
+
+exp	  ::= exp MAS exp					{: p.add(); :}
+		| exp MENOS exp					{: p.sub(); :}
+		| exp POR exp     				{: p.mul(); :}
+		| exp DIV exp					{: p.div(); :}
+		| MENOS exp						{: p.push(-1); p.mul(); :}  %prec UMINUS
+		| AP exp CP
+		| IDENT:i ASIG exp	 	    	{: p.assignment(i); :}
+		| IDENT:i				  		{: p.load(s.lookUp(i)); :}
+		| ENTERO:n              		{: p.push(n); :}
+		| IDENT:f AP exp CP     		{: p.invoke(f); :}
+		;
+		
+cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
+		| exp:e1 NEQ exp:e2				{: RESULT = p.condition(e1, Condition.NEQ, e2); :}
+		| exp:e1 LOW exp:e2				{: RESULT = p.condition(e1, Condition.LOW, e2); :}
+		| exp:e1 LOE exp:e2				{: RESULT = p.condition(e1, Condition.LOE, e2); :}
+		| exp:e1 GRE exp:e2				{: RESULT = p.condition(e1, Condition.GRE, e2); :}
+		| exp:e1 GOE exp:e2				{: RESULT = p.condition(e1, Condition.GOE, e2); :}
+		| AP cond:c CP					{: RESULT = c; :}
+		;

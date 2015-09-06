@@ -3,7 +3,7 @@ import java.util.*;
 public class SymbolTable {
 
     private Map<String, List<Integer>> symTable;    // Map of identifier -> list of ocurrences (n scope)
-    private Printer printer;                            // Variable for printing
+    private Printer printer;                        // Variable for printing
 
     public SymbolTable(){
         this.symTable = new HashMap<String, List<Integer>>();

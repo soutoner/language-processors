@@ -12,8 +12,8 @@ parser code {:
 // Code available in the grammar actions
 action code {:
 	Printer p = new Printer();
-	SymbolTable t = new SymbolTable();   // Symbol table
-	int actualScope = 0;                 // Aux variable for scope
+	SymbolTable t = Generator.getInstance().symbolTable();		// Symbol table
+	int actualScope = 0;                 						// Aux variable for scope
 
 	public String newLabel(){ return Generator.getInstance().newLabel(); }
 :}

@@ -1,12 +1,18 @@
 #!/bin/bash
 
+# Usage: `./runtest` will run all the tests under the `test` directory
+#		 `./runtest test/NAME.pl` will run only the given test
+
+passed_test=0;
+
 # $1 path to the exercise
 # $2 counter if any
 correct_exercise () {
+
 	# Compile solution
-	./jplc $1 solution.j;
+	bin/jplc $1 solution.j;
 	# Compile exercise
-	java -cp .:../lib/java-cup-11b-runtime.jar JPLC $1 exercise.j;
+	java -cp bin:../lib/java-cup-11b-runtime.jar JPLC $1 exercise.j;
 	# Run solution and execute
 	solution=`./jpl solution 1`;
 	# Run jasmin on exercise and execute
@@ -18,6 +24,7 @@ correct_exercise () {
 	if [[ $solution == $exercise ]]
 	then
 		echo "${2-1}. ${name} Ok!";
+		passed_test=$((passed_test+1));
 	else 
 		echo "${2-1}. ${name} ERROR! Expected: ${solution} Given: ${exercise}";
 	fi
@@ -25,16 +32,18 @@ correct_exercise () {
 
 if [ $1 ]
 then
-	correct_exercise "jplc-test/${1}";	
+	correct_exercise $1;
 else
-	count=1;
+	count=0;
 
-	for filename in jplc-test/*;
+	for filename in test/*;
 	do
 		correct_exercise $filename $count;
 
 		count=$((count+1));
 	done
+
+	echo "Nº of Ok!: ${passed_test}/${count}";
 fi
 
 
