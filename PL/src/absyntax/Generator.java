@@ -5,10 +5,11 @@ import java.io.PrintStream;
 public class Generator {
 
     private static Generator instance;
-    protected PrintStream out = PLC.out;    // Output to print (can be System.out or a file)
-    protected int actualTmp;                // Actual tmp
+    private PrintStream out = PLC.out;    // Output to print (can be System.out or a file)
+    private int actualTag;                // Actual label
+    private int actualTmp;                // Actual tmp
 
-    public Generator(){ this.actualTmp = 0; }
+    public Generator(){ this.actualTmp = 0; this.actualTag = 0; }
 
     public static synchronized Generator getInstance()
     {
@@ -21,6 +22,8 @@ public class Generator {
     public PrintStream out(){
         return out;
     }
+
+    public String newTag(){ return "L" + actualTag++; }
 
     public String newTmp(){ return "t" + actualTmp++; }
 }

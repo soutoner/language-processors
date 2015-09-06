@@ -1,6 +1,7 @@
 package absyntax.sent;
 
 import absyntax.Generator;
+import absyntax.Printer;
 import absyntax.exp.Exp;
 
 public final class Print extends Sent {
@@ -13,7 +14,7 @@ public final class Print extends Sent {
 
     @Override
     public Object eval() {
-        Generator.getInstance().out().println("    print " + exp.eval() + ";");
+        Printer.print(exp.eval());
 
         return null;
     }

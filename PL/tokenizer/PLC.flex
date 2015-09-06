@@ -4,6 +4,14 @@ import java_cup.runtime.*;
 
 %%
 
+/* Code (tag handling) */
+
+%{
+	public String newTag(){
+		return Generator.getInstance().newTag();
+	}
+%}
+
 /*  Declarations */
    
 %cup
@@ -49,7 +57,7 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "&&"                 		{ return new Symbol(sym.AND); }
     "||"                 		{ return new Symbol(sym.OR); }
 /* Code */   
-    "if"                 		{ return new Symbol(sym.IF); }
+    "if"                 		{ return new Symbol(sym.IF, newTag()); }
     "else"               		{ return new Symbol(sym.ELSE); }
     "while"              		{ return new Symbol(sym.WHILE); }
     "do"                 		{ return new Symbol(sym.DO); }

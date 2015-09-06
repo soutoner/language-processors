@@ -17,7 +17,7 @@ public final class BinaryOp extends Exp {
     public Object eval() {
         String tmp = Generator.getInstance().newTmp();
 
-        Generator.getInstance().out().println("    " + tmp + " = " + exp1.eval() + " " + op + " " + exp2.eval() + ";");
+        Printer.assignation(tmp, exp1.eval() + " " + op + " " + exp2.eval());
 
         return tmp;
     }

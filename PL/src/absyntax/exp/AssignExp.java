@@ -1,6 +1,7 @@
 package absyntax.exp;
 
 import absyntax.Generator;
+import absyntax.Printer;
 
 public final class AssignExp extends Exp {
 
@@ -14,7 +15,7 @@ public final class AssignExp extends Exp {
 
     @Override
     public Object eval() {
-        Generator.getInstance().out().println("    " + ident.eval() + " = " + exp.eval() + ";");
+        Printer.assignation(ident.eval(), exp.eval());
 
         return ident;
     }

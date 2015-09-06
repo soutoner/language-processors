@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.util.*;
 import absyntax.exp.*;
 import absyntax.sent.*;
+import absyntax.cond.*;
 
 parser code {:
 	public AST tree = new AST();			// Abstract Syntax Tree associated
@@ -28,7 +29,7 @@ terminal String     	IDENT;
 non terminal List<Sent> listaSent;
 non terminal Sent		sent;
 non terminal			elsePart;
-non terminal Object		cond;
+non terminal Cond		cond;
 non terminal Exp		exp;
 
 /* Precedence */
@@ -45,7 +46,7 @@ listaSent ::= sent:s				{: RESULT = new ArrayList<Sent>(); RESULT.add(s); parser
 			;
 
 sent  ::= exp:e PYC					{: RESULT = new ExpSent(e); :}
-		| IF AP cond CP sent
+		| IF:ifTag AP cond:c CP sent:s	{: RESULT = new IfSent(ifTag, c, s); :}
 		| IF AP cond CP sent ELSE sent
 		| WHILE AP cond CP sent
 		| DO sent WHILE AP cond CP PYC
@@ -65,14 +66,14 @@ exp   ::= exp:e1 MAS exp:e2			{: RESULT = new BinaryOp('+', e1, e2); :}
 		| ENTERO:n					{: RESULT = new Int(n); :}
 		;
 
-cond  ::= exp EQ exp
-		| exp NEQ exp
-		| exp LOW exp
-		| exp LOE exp
-		| exp GRE exp
-		| exp GOE exp
-		| NOT cond
-		| cond AND cond
-		| cond OR cond
-		| AP cond CP
+cond  ::= exp:e1 EQ exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.EQ , e2); :}
+		| exp:e1 NEQ exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.NEQ , e2); :}
+		| exp:e1 LOW exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.LOW , e2); :}
+		| exp:e1 LOE exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.LOE , e2); :}
+		| exp:e1 GRE exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.GRE , e2); :}
+		| exp:e1 GOE exp:e2			{: RESULT = new BinaryCond(e1, BinaryCond.GOE , e2); :}
+		| NOT cond:c				{: RESULT = new NotCond(c); :}
+		| cond:c1 AND cond:c2		{: RESULT = new AndCond(c1, c2); :}
+		| cond:c1 OR cond:c2		{: RESULT = new OrCond(c1, c2); :}
+		| AP cond:c CP				{: RESULT = c; :}
 		;
