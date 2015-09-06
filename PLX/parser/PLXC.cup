@@ -1,0 +1,143 @@
+// PLXC - Adrian Gonzalez Leiva
+import java_cup.runtime.*;
+
+// Override error reporting method
+parser code {:
+    @Override
+    public void report_error(String message, Object info){ // Syntax error handling message
+        new Printer().error(message);
+    }
+:}
+
+// Code available in the grammar actions
+action code {:
+	Printer p = new Printer();
+	SymbolTable t = new SymbolTable();   // Symbol table
+	int actualScope = 0;                 // Aux variable for scope
+
+	public String newLabel(){ return Generator.getInstance().newLabel(); }
+:}
+
+/*Terminals */
+terminal				MAS, MENOS, POR, DIV, MOD, INCR, DECR, UMINUS, PREINCR;
+terminal				AP, CP, ALL, CLL;
+terminal				ASIG, PYC, COMA;
+terminal				EQ, NEQ, LOW, LOE, GRE, GOE, NOT, AND, OR;
+terminal				ELSE, PRINT, INT, STEP;
+terminal String			IF, WHILE, DO, FOR, TO, DOWNTO;
+terminal Integer		ENTERO;
+terminal String			IDENT;
+
+/* Non terminals */
+non terminal			sent, listaSent;
+non terminal			decl, listaDecl;
+non terminal			elsePart;
+non terminal String     incrDecrOp;
+non terminal Condition	cond;
+non terminal Object		exp, stepPart;
+
+/* Precedence */
+precedence left         COMA;
+precedence right        ASIG;
+precedence left         OR;
+precedence left         AND;
+precedence left         EQ, NEQ;
+precedence left         LOW, LOE, GRE, GOE;
+precedence left         MAS, MENOS;
+precedence left         POR, DIV, MOD;
+precedence right        UMINUS, PREINCR;
+precedence left         INCR, DECR;
+precedence left         ELSE;
+
+/* Grammar */
+listaSent ::= sent
+			| listaSent sent
+			;
+
+sent  ::= exp PYC
+		| IF:endIf AP cond:c CP			{: p.label(c.getTrueLabel()); :}
+		  sent							{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
+		  elsePart						{: p.label(endIf); :}
+		| WHILE:whileLabel				{: p.label(whileLabel); :}
+		  AP cond:c CP					{: p.label(c.getFalseLabel()); :}
+		  sent							{: p.goTo(whileLabel); p.goTo(c.getTrueLabel()); :}
+		| DO:doLabel					{: p.label(doLabel); :}
+		  sent WHILE AP cond:c CP PYC   {: p.label(c.getTrueLabel()); p.goTo(doLabel); p.label(c.getFalseLabel()); :}
+		| FOR:forLabel AP exp PYC		{: p.label(forLabel); :}
+		  cond:c PYC					{: RESULT = newLabel(); p.label(RESULT.toString()); :}
+		  exp CP						{: p.goTo(forLabel); p.label(c.getTrueLabel()); :}
+		  sent							{: p.goTo(RESULT.toString()); p.label(c.getFalseLabel()); :}
+        | PRINT AP exp:e CP PYC			{: p.print(e); :}
+
+          // FOR PASCAL
+          // FOR TO
+		| FOR:forLabel exp:ini
+		  TO:toLabel exp:lim			{: p.label(forLabel); RESULT = p.condition(lim, Condition.LOW, ini); p.label(toLabel); :}
+		  stepPart:s DO					{: p.assignment(ini.toString(), ini + " + " + ((s == null) ? "1" : s)); p.goTo(forLabel); p.label(((Condition) RESULT).getFalseLabel()); :}
+		  sent							{: p.goTo(toLabel); p.label(((Condition) RESULT).getTrueLabel()); :}
+		  // FOR DOWNTO
+		| FOR:forLabel exp:ini
+          DOWNTO:toLabel exp:lim        {: p.label(forLabel); RESULT = p.condition(ini, Condition.LOW, lim); p.label(toLabel); :}
+          stepPart:s DO					{: p.assignment(ini.toString(), ini + " - " + ((s == null) ? "1" : s)); p.goTo(forLabel); p.label(((Condition) RESULT).getFalseLabel()); :}
+          sent							{: p.goTo(toLabel); p.label(((Condition) RESULT).getTrueLabel()); :}
+
+	 	  // Anonymous block
+	 	| ALL                           {: actualScope++; :}
+	 	  listaSent CLL                 {: t.purge(actualScope--); :}
+
+	 	  // Declarations
+	 	| INT listaDecl PYC
+	 	;
+
+elsePart  ::= ELSE sent
+			|
+			;
+
+stepPart  ::= STEP exp:e                {: RESULT = e; :}
+            |                           {: RESULT = null; :}
+            ;
+
+
+// List of declarations
+listaDecl ::= listaDecl COMA decl
+            | decl
+            ;
+
+decl ::= IDENT:i                        {: t.declare(i, actualScope); :}
+       | IDENT:i ASIG exp:e             {: t.declare(i, actualScope); p.assignment(t.lookUp(i), e); :}
+       ;
+
+exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1 + " + " + e2); :}
+		| exp:e1 MENOS exp:e2			{: RESULT = p.tern(e1 + " - " + e2); :}
+		| exp:e1 POR exp:e2				{: RESULT = p.tern(e1 + " * " + e2); :}
+		| exp:e1 DIV exp:e2				{: RESULT = p.tern(e1 + " / " + e2); :}
+		| exp:e1 MOD exp:e2				{: RESULT = p.mod(e1, e2); :}
+		| MENOS exp:e					{: RESULT = p.tern("0 - " + e); :}  %prec UMINUS
+		| AP exp:e CP					{: RESULT = e; :}
+		| IDENT:i ASIG exp:e			{: RESULT = p.assignment(t.lookUp(i), e); :}
+		| IDENT:i						{: RESULT = t.lookUp(i); :}
+		| ENTERO:n						{: RESULT = n; :}
+
+		  // PRE INCR
+		| incrDecrOp:op IDENT:i         {: RESULT = p.preIncrDecr(t.lookUp(i), op); :}  %prec PREINCR
+		| IDENT:i incrDecrOp:op         {: RESULT = p.postIncrDecr(t.lookUp(i), op); :}
+		| error                         {: p.error("syntax error"); :}
+		;
+
+incrDecrOp    ::= INCR                  {: RESULT = "++"; :}
+                | DECR                  {: RESULT = "--"; :}
+                ;
+
+cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
+		| exp:e1 NEQ exp:e2				{: RESULT = p.condition(e1, Condition.NEQ, e2); :}
+		| exp:e1 LOW exp:e2				{: RESULT = p.condition(e1, Condition.LOW, e2); :}
+		| exp:e1 LOE exp:e2				{: RESULT = p.condition(e1, Condition.LOE, e2); :}
+		| exp:e1 GRE exp:e2				{: RESULT = p.condition(e1, Condition.GRE, e2); :}
+		| exp:e1 GOE exp:e2				{: RESULT = p.condition(e1, Condition.GOE, e2); :}
+		| NOT cond:c					{: RESULT = c.not(); :}
+		| cond:c1 AND					{: p.label(c1.getTrueLabel()); :}
+		  cond:c2						{: RESULT = c2; p.label(c1.getFalseLabel()); p.goTo(c2.getTrueLabel()); :}
+		| cond:c1 OR					{: p.label(c1.getFalseLabel()); :}
+		  cond:c2						{: RESULT = c2; p.label(c1.getTrueLabel()); p.goTo(c2.getFalseLabel()); :}
+		| AP cond:c CP					{: RESULT = c; :}
+		;

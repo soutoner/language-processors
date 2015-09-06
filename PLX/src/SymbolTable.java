@@ -3,11 +3,11 @@ import java.util.*;
 public class SymbolTable {
 
     private Map<String, List<Integer>> symTable;    // Map of identifier -> list of ocurrences (n scope)
-    private Printer out;                                // Variable for printing
+    private Printer printer;                            // Variable for printing
 
     public SymbolTable(){
-        symTable = new HashMap<String, List<Integer>>();
-        out = new Printer();
+        this.symTable = new HashMap<String, List<Integer>>();
+        this.printer = new Printer();
     }
 
     // Declare variables into Symbol Table
@@ -21,7 +21,7 @@ public class SymbolTable {
             Integer closerScope = occurrences.get(0);
 
             if(closerScope.compareTo(actualScope) == 0 ){ // multiple declaration of variable, throw error
-                out.error("variable \'" + id + "\' ya declarada");
+                printer.error("variable \'" + id + "\' ya declarada");
             } else if (closerScope.compareTo(actualScope) < 0){ // not declared in this scope so add occurrence at beginning
                 occurrences.add(0, actualScope);
             } else {
@@ -35,7 +35,7 @@ public class SymbolTable {
         List<Integer> occurrences = symTable.get(id); // ocurrences of an identifier
 
         if(occurrences == null){ // variable non declared, throw error
-            out.error("variable \'" + id + "\' no declarada");
+            printer.error("variable \'" + id + "\' no declarada");
             return id;
         } else { // identifier is declared, fetch closer occurrence
             if(occurrences.size() > 1 ){ // variable declared more than one, append suffix

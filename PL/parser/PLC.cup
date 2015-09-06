@@ -3,7 +3,7 @@ import java_cup.runtime.*;
 
 // Code available in the grammar actions
 action code {:
-	Printer printer = new Printer();
+	Printer p = new Printer();
 
 	public String newLabel(){ return Generator.getInstance().newLabel(); }
 :}
@@ -12,8 +12,7 @@ action code {:
 terminal				MAS, MENOS, POR, DIV, UMINUS;
 terminal				AP, CP, ALL, CLL;
 terminal				ASIG, PYC;
-terminal				EQ, NEQ, LOW, LOE, GRE, GOE;
-terminal				NOT, AND, OR;
+terminal				EQ, NEQ, LOW, LOE, GRE, GOE, NOT, AND, OR;
 terminal				ELSE, PRINT;
 terminal String			IF, WHILE, DO, FOR;
 terminal Integer		ENTERO;
@@ -27,12 +26,15 @@ non terminal Condition	cond;
 non terminal Object		exp;
 
 /* Precedence */
-precedence left			MAS, MENOS;
-precedence left			POR, DIV;
-precedence left			UMINUS;
-precedence left			AND, OR;
-precedence left			ELSE;
-precedence right		NOT;
+precedence right        ASIG;
+precedence left         OR;
+precedence left         AND;
+precedence left         EQ, NEQ;
+precedence left         LOW, LOE, GRE, GOE;
+precedence left         MAS, MENOS;
+precedence left         POR, DIV;
+precedence right        UMINUS;
+precedence left         ELSE;
 
 /* Grammar */
 listaSent ::= sent
@@ -42,27 +44,27 @@ listaSent ::= sent
 sent  ::= exp PYC
 
 		  // IF - ELSE (optional)
-		| IF:endIf AP cond:c CP			{: printer.label(c.getTrueLabel()); :}
-		  sent							{: printer.goTo(endIf); printer.label(c.getFalseLabel()); :}
-		  elsePart						{: printer.label(endIf); :}
+		| IF:endIf AP cond:c CP			{: p.label(c.getTrueLabel()); :}
+		  sent							{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
+		  elsePart						{: p.label(endIf); :}
 
 		  // WHILE
-		| WHILE:whileLabel				{: printer.label(whileLabel); :}
-		  AP cond:c CP					{: printer.label(c.getFalseLabel()); :}
-		  sent							{: printer.goTo(whileLabel); printer.goTo(c.getTrueLabel()); :}
+		| WHILE:whileLabel				{: p.label(whileLabel); :}
+		  AP cond:c CP					{: p.label(c.getFalseLabel()); :}
+		  sent							{: p.goTo(whileLabel); p.goTo(c.getTrueLabel()); :}
 
 		  // DO WHILE
-		| DO:doLabel					{: printer.label(doLabel); :}
-		  sent WHILE AP cond:c CP PYC   {: printer.label(c.getTrueLabel()); printer.goTo(doLabel); printer.label(c.getFalseLabel()); :}
+		| DO:doLabel					{: p.label(doLabel); :}
+		  sent WHILE AP cond:c CP PYC   {: p.label(c.getTrueLabel()); p.goTo(doLabel); p.label(c.getFalseLabel()); :}
 
 		  // FOR
-		| FOR:forLabel AP exp PYC		{: printer.label(forLabel); :}
-		  cond:c PYC					{: RESULT = newLabel(); printer.label(RESULT.toString()); :}
-		  exp CP						{: printer.goTo(forLabel); printer.label(c.getTrueLabel()); :}
-		  sent							{: printer.goTo(RESULT.toString()); printer.label(c.getFalseLabel()); :}
+		| FOR:forLabel AP exp PYC		{: p.label(forLabel); :}
+		  cond:c PYC					{: RESULT = newLabel(); p.label(RESULT.toString()); :}
+		  exp CP						{: p.goTo(forLabel); p.label(c.getTrueLabel()); :}
+		  sent							{: p.goTo(RESULT.toString()); p.label(c.getFalseLabel()); :}
 
 		  // PRINT
-	 	| PRINT AP exp:e CP PYC			{: printer.print(e); :}
+	 	| PRINT AP exp:e CP PYC			{: p.print(e); :}
 
 	 	  // Anonymous block
 	 	| ALL listaSent CLL
@@ -72,28 +74,28 @@ elsePart  ::= ELSE sent
 			|
 			;
 
-exp   ::= exp:e1 MAS exp:e2				{: RESULT = printer.tern(e1 + " + " + e2); :}
-		| exp:e1 MENOS exp:e2			{: RESULT = printer.tern(e1 + " - " + e2); :}
-		| exp:e1 POR exp:e2				{: RESULT = printer.tern(e1 + " * " + e2); :}
-		| exp:e1 DIV exp:e2				{: RESULT = printer.tern(e1 + " / " + e2); :}
-		| MENOS exp:e					{: RESULT = printer.tern("0 - " + e); :}  %prec UMINUS
+exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1 + " + " + e2); :}
+		| exp:e1 MENOS exp:e2			{: RESULT = p.tern(e1 + " - " + e2); :}
+		| exp:e1 POR exp:e2				{: RESULT = p.tern(e1 + " * " + e2); :}
+		| exp:e1 DIV exp:e2				{: RESULT = p.tern(e1 + " / " + e2); :}
+		| MENOS exp:e					{: RESULT = p.tern("0 - " + e); :}  %prec UMINUS
 		| AP exp:e CP					{: RESULT = e; :}
-		| IDENT:i ASIG exp:e			{: RESULT = printer.assignment(i, e); :}
+		| IDENT:i ASIG exp:e			{: RESULT = p.assignment(i, e); :}
 		| IDENT:i						{: RESULT = i; :}
 		| ENTERO:n						{: RESULT = n; :}
 		;
 
-cond  ::= exp:e1 EQ exp:e2				{: RESULT = printer.condition(e1, Condition.EQ, e2); :}
-		| exp:e1 NEQ exp:e2				{: RESULT = printer.condition(e1, Condition.NEQ, e2); :}
-		| exp:e1 LOW exp:e2				{: RESULT = printer.condition(e1, Condition.LOW, e2); :}
-		| exp:e1 LOE exp:e2				{: RESULT = printer.condition(e1, Condition.LOE, e2); :}
-		| exp:e1 GRE exp:e2				{: RESULT = printer.condition(e1, Condition.GRE, e2); :}
-		| exp:e1 GOE exp:e2				{: RESULT = printer.condition(e1, Condition.GOE, e2); :}
+cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
+		| exp:e1 NEQ exp:e2				{: RESULT = p.condition(e1, Condition.NEQ, e2); :}
+		| exp:e1 LOW exp:e2				{: RESULT = p.condition(e1, Condition.LOW, e2); :}
+		| exp:e1 LOE exp:e2				{: RESULT = p.condition(e1, Condition.LOE, e2); :}
+		| exp:e1 GRE exp:e2				{: RESULT = p.condition(e1, Condition.GRE, e2); :}
+		| exp:e1 GOE exp:e2				{: RESULT = p.condition(e1, Condition.GOE, e2); :}
 		| NOT cond:c					{: RESULT = c.not(); :}
-		| cond:c1 AND					{: printer.label(c1.getTrueLabel()); :}
-		  cond:c2						{: RESULT = c2; printer.label(c1.getFalseLabel()); printer.goTo(c2.getTrueLabel()); :}
-		| cond:c1 OR					{: printer.label(c1.getFalseLabel()); :}
-		  cond:c2						{: RESULT = c2; printer.label(c1.getTrueLabel()); printer.goTo(c2.getFalseLabel()); :}
+		| cond:c1 AND					{: p.label(c1.getTrueLabel()); :}
+		  cond:c2						{: RESULT = c2; p.label(c1.getFalseLabel()); p.goTo(c2.getTrueLabel()); :}
+		| cond:c1 OR					{: p.label(c1.getFalseLabel()); :}
+		  cond:c2						{: RESULT = c2; p.label(c1.getTrueLabel()); p.goTo(c2.getFalseLabel()); :}
 		| AP cond:c CP					{: RESULT = c; :}
 		;
 

@@ -20,9 +20,8 @@ public class PLXC {
 
 			p = new parser(new Yylex(in));
 			Object result = p.parse().value;
-		
 		} catch (RuntimeException re) {
-			p.done_parsing();						// If exception is thrown, stop parsing
+			p.done_parsing();	// If exception is thrown, stop parsing
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

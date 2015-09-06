@@ -19,6 +19,31 @@ public class Printer {
 		return assignment(newTmp(), operation);
 	}
 
+	public String mod(Object e1, Object e2){
+		String tmp1 = assignment(newTmp(), e1 + " / " + e2);
+		String tmp2 = assignment(newTmp(), tmp1 + " * " + e2);
+
+		return assignment(newTmp(), e1 + " - " + tmp2);
+	}
+
+	public Object preIncrDecr(String id, String op){
+		if(op.equals("++"))
+			return assignment(id, id + " + 1");
+		else
+			return assignment(id, id + " - 1");
+	}
+
+	public String postIncrDecr(String id, String op){
+		String tmp = assignment(newTmp(), id);
+
+		if(op.equals("++"))
+			assignment(id, id + " + 1");
+		else
+			assignment(id, id + " - 1");
+
+		return tmp;
+	}
+
 	/**
 	 * CONDITIONS
 	 */
@@ -64,6 +89,26 @@ public class Printer {
 	}
 
 	/**
+	 * ERRORS & LOGGING
+	 */
+
+	// # ERROR: msg
+	// error;
+	// halt;
+	public void error(String msg){
+		if(msg != null) comment("ERROR: " + msg);
+		out.println("   error;");
+		out.println("   halt;");
+		throw new RuntimeException();
+	}
+
+	// error;
+	// halt;
+	public void error(){
+		error(null);
+	}
+
+	/**
 	 * AVAILABLE INSTRUCTIONS
 	 */
 
@@ -99,8 +144,8 @@ public class Printer {
 		out.println("   print " + e + ";");
 	}
 
-	// halt;
-	public void halt(){
-		out.println("   halt;");
+	// # comment;
+	public void comment(String comment){
+		out.println("# " + comment);
 	}
 }

@@ -3,7 +3,7 @@ import java.io.PrintStream;
 public class Generator {
 
     private static Generator instance;
-    private static PrintStream out = PLC.out; // Output to print (can be System.out or a file)
+    private static PrintStream out = PLXC.out; // Output to print (can be System.out or a file)
     private int actualLabel = 0;              // Actual label
     private int actualTmp = 0;                // Actual tmp
 
