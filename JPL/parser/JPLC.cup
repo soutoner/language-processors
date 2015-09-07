@@ -1,4 +1,4 @@
-// JPLC - Adrian Gonzalez Leiva
+// JPLXC - Adrian Gonzalez Leiva
 import java_cup.runtime.*;
 
 // Code available in the grammar actions
@@ -20,6 +20,7 @@ terminal String     	IDENT;
 /* Non terminals */
 non terminal         	listaFunc, listaSent;
 non terminal         	function, sent;
+non terminal			assignment;
 non terminal			decl, listaDecl;
 non terminal		 	elsePart;
 non terminal Condition	cond;
@@ -44,23 +45,17 @@ function ::= INT IDENT:f 						{: p.method(f); :}
 			 sent								{: p.endMethod(); s.purge(); :}
 		   ;
 
-sent ::= exp:e PYC								{: p.pop(); :}
-
-		 // IF - ELSE (opt)
-	   | IF:endIf AP cond:c CP 					{: p.label(c.getTrueLabel()); :}
-		 sent				 					{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
-		 elsePart								{: p.label(endIf); :}
-
-		 // WHILE LOOP
-	   | WHILE:whileLabel					    {: p.label(whileLabel); :}
-		 AP cond:c CP							{: p.label(c.getTrueLabel()); :}
-		 sent									{: p.goTo(whileLabel); p.label(c.getFalseLabel()); :}
-
-		 // Anonymous block
-	   | ALL listaSent CLL
-	   | RETURN exp PYC  						{: p.retorno(); :}
-       | INT listaDecl PYC						{:  :}
-	   ;
+sent  ::= assignment PYC						{: p.pop(); :}
+	    | IF:endIf AP cond:c CP 				{: p.label(c.getTrueLabel()); :}
+		  sent				 					{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
+		  elsePart								{: p.label(endIf); :}
+	   	| WHILE:whileLabel					    {: p.label(whileLabel); :}
+		  AP cond:c CP							{: p.label(c.getTrueLabel()); :}
+		  sent									{: p.goTo(whileLabel); p.label(c.getFalseLabel()); :}
+	   	| ALL listaSent CLL
+	   	| RETURN exp PYC  						{: p.retorno(); :}
+       	| INT listaDecl PYC
+	   	;
 
 listaSent ::= sent
 		 	| listaSent sent
@@ -86,11 +81,14 @@ exp	  ::= exp MAS exp					{: p.add(); :}
 		| exp DIV exp					{: p.div(); :}
 		| MENOS exp						{: p.push(-1); p.mul(); :}  %prec UMINUS
 		| AP exp CP
-		| IDENT:i ASIG exp	 	    	{: p.assignment(i); :}
+		| assignment
 		| IDENT:i				  		{: p.load(s.lookUp(i)); :}
 		| ENTERO:n              		{: p.push(n); :}
 		| IDENT:f AP exp CP     		{: p.invoke(f); :}
 		;
+
+assignment    ::= IDENT:i ASIG exp		{: p.assignment(i); :}
+				;
 		
 cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
 		| exp:e1 NEQ exp:e2				{: RESULT = p.condition(e1, Condition.NEQ, e2); :}
