@@ -4,7 +4,7 @@ import java.util.*;
 public class SymbolTable {
 
     private Map<String, List<Occurrence>> symTable;     // Map of identifier -> list of occurrence
-    private Printer printer;                                // Variable for printing
+    private Printer printer;                            // Variable for printing
 
     public SymbolTable() {
         symTable = new HashMap<String, List<Occurrence>>();
@@ -12,7 +12,7 @@ public class SymbolTable {
     }
 
     // Declare variables (array) into Symbol Table
-    public void declare(String id, int actualScope, int type, int size) {
+    public String declare(String id, int actualScope, int type, int size) {
         List<Occurrence> occurrences = symTable.get(id); // occurrences of an identifier
 
         if (occurrences == null) { // we need to add it to the symbol table
@@ -31,11 +31,14 @@ public class SymbolTable {
         }
 
         // printSymTable();
+        return id;
     }
 
     // Declare variables into Symbol Table
-    public void declare(String id, int actualScope, int type) {
+    public String declare(String id, int actualScope, int type) {
         declare(id, actualScope, type, 0);
+
+        return id;
     }
 
     // Check if an variable was previously declared or not
@@ -54,6 +57,10 @@ public class SymbolTable {
         }
     }
 
+    /**
+     * MUTATORS
+     */
+
     // Purge the symbol table when a scope is left
     public void purge(int actualScope) {
         Iterator it = symTable.entrySet().iterator();
@@ -71,6 +78,13 @@ public class SymbolTable {
                 }
             }
         }
+    }
+
+    public void setSizeOf(Object id, int size){
+        if(! (id instanceof String))
+            throw new RuntimeException("setTmpSize on non tmp");
+
+        symTable.get((String) id).get(0).setSize(size);
     }
 
     /**

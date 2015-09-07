@@ -126,12 +126,12 @@ public class Printer {
 
 	// if (e1 == e2) goto label;
 	public void ifEqual(Object e1, Object e2, String label){
-		out.println("   if(" + e1 + " == " + e2 + ") goto " + label + ";");
+		out.println("   if (" + e1 + " == " + e2 + ") goto " + label + ";");
 	}
 
 	// if (e1 < e2) goto label;
 	public void ifLower(Object e1, Object e2, String label){
-		out.println("   if(" + e1 + " < " + e2 + ") goto " + label + ";");
+		out.println("   if (" + e1 + " < " + e2 + ") goto " + label + ";");
 	}
 
 	// label:

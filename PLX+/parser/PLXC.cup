@@ -15,6 +15,7 @@ action code {:
 	Printer p = new Printer();
 	SymbolTable t = Generator.getInstance().symbolTable();		// Symbol table
 	int actualScope = 0;                 						// Aux variable for scope
+	int arrPtr = 0;												// Tmp array pointer
 
 	public String newLabel(){ return Generator.getInstance().newLabel(); }
 
@@ -40,11 +41,10 @@ non terminal				sent, listaSent;
 non terminal				declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal				elsePart;
 non terminal				switchSent, defaultCase;
-non terminal String     	incrDecrOp, identPart;
+non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
 non terminal Object			exp, stepPart, varOrNumber, arrayPart;
-non terminal List<Object>   listaExp;
 
 /* Precedence */
 precedence left         	COMA;
@@ -64,7 +64,8 @@ listaSent ::= sent
 			| listaSent sent
 			;
 
-sent  ::= exp PYC
+sent  ::= assignment PYC
+		| prePostIncrDecr PYC
 		| IF:endIf AP cond:c CP			{: p.label(c.getTrueLabel()); :}
 		  sent							{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
 		  elsePart						{: p.label(endIf); :}
@@ -126,8 +127,8 @@ declFloat ::= IDENT:i                       {: t.declare(i, actualScope, Occurre
               ASIG ALL listaExp:l CLL       {: p.arrayInit(i, l); :}
             ;
 
-listaExp ::= listaExp:l COMA exp:e      {: l.add(e); RESULT = l; :}
-		   | exp:e                      {: RESULT = new ArrayList<Object>(); RESULT.add(e); :}
+listaExp ::= listaExp:l COMA exp:e      {: RESULT = p.rawAssignment(l, arrPtr++, e, null); t.setSizeOf(l, arrPtr); if(t.typeOf(l) != t.typeOf(e)) p.error("Los tipos de los elementos de la matriz son diferentes"); :}
+		   | exp:e                      {: arrPtr = 0; RESULT = p.rawAssignment(p.newTmpArray(t.typeOf(e), 0), arrPtr++, e, null); :}
 		   ;
 
 exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
@@ -137,14 +138,9 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| exp:e1 MOD exp:e2				{: RESULT = p.mod(e1, e2); :}
 		| MENOS exp:e					{: RESULT = p.tern(new Integer(0), "-", e); :}  %prec UMINUS
 		| AP exp:e CP					{: RESULT = e; :}
-		| IDENT:i ASIG exp:e 	    	{: RESULT = p.assignment(t.lookUp(i), e); :}
-	 	| IDENT:i AC exp:idx CC
-	 	  ASIG exp:e         			{: RESULT = p.assignment(t.lookUp(i), idx, e); :}
-	 	| IDENT:i
-	 	  ASIG ALL listaExp:l CLL       {: RESULT = p.arrayInit(i, l); :}
+		| assignment:a					{: RESULT = a; :}
 	  	| varOrNumber:n                 {: RESULT = n; :}
-		| incrDecrOp:op IDENT:i         {: RESULT = p.preIncrDecr(t.lookUp(i), op); :}  %prec PREINCR
-		| IDENT:i incrDecrOp:op         {: RESULT = p.postIncrDecr(t.lookUp(i), op); :}
+	  	| prePostIncrDecr:p				{: RESULT = p; :}
 		| AP INT CP exp:e				{: RESULT = p.casting(e, Occurrence.INT); :}
 	  	| AP FLOAT CP
           varOrNumber:n1 				{: RESULT = p.casting(n1, Occurrence.FLOAT); :}
@@ -154,11 +150,22 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| error                         {: p.error("syntax error"); :}
 		;
 
-varOrNumber   ::= IDENT:i				{: RESULT = t.lookUp(i); :}
-				| IDENT:i AC exp:idx CC	{: RESULT = p.loadArray(t.lookUp(i), idx); :}
-              	| ENTERO:n              {: RESULT = n; :}
-			   	| REAL:n                {: RESULT = n; :}
+assignment    ::= IDENT:i ASIG exp:e  	    {: RESULT = p.assignment(t.lookUp(i), e); :}
+				| IDENT:i AC exp:idx CC
+               	  ASIG exp:e        		{: RESULT = p.assignment(t.lookUp(i), idx, e); :}
+				| IDENT:i
+               	  ASIG ALL listaExp:l CLL	{: RESULT = p.arrayInit(i, l); :}
+               	;
+
+varOrNumber   ::= IDENT:i					{: RESULT = t.lookUp(i); :}
+				| IDENT:i AC exp:idx CC		{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+              	| ENTERO:n              	{: RESULT = n; :}
+			   	| REAL:n                	{: RESULT = n; :}
 			   	;
+
+prePostIncrDecr   ::= incrDecrOp:op IDENT:i         {: RESULT = p.preIncrDecr(t.lookUp(i), op); :}  %prec PREINCR
+					| IDENT:i incrDecrOp:op         {: RESULT = p.postIncrDecr(t.lookUp(i), op); :}
+					;
 
 incrDecrOp    ::= INCR:i                {: RESULT = i; :}
                 | DECR:d                {: RESULT = d; :}

@@ -10,12 +10,12 @@ public class Printer {
     }
 
     // Creates temporary variables (String tag)
-    private String newTmp(int type) {
+    public String newTmp(int type) {
         return Generator.getInstance().newTmp(type);
     }
 
     // Creates temporary array variables (String tag)
-    private String newTmpArray(int type, int size) {
+    public String newTmpArray(int type, int size) {
         return Generator.getInstance().newTmpArray(type, size);
     }
 
@@ -62,27 +62,21 @@ public class Printer {
      */
 
     // Explicit array initialization
-    public String arrayInit(String id, List<Object> list) {
-        if(sizeOf(id) < list.size())
+    public String arrayInit(String id, String arr) {
+        if(sizeOf(id) < sizeOf(arr))
             error("las matrices no son compatibles");
 
-        String arrTmp = newTmpArray(typeOf(id), list.size());
+        if(typeOf(id) != typeOf(arr))
+            error("Error de tipos");
+
         String tmp = newTmp(typeOf(id));
 
-        int idx = 0;
-
-        for(Object exp: list) {
-            if(typeOf(id) != typeOf(exp))
-                error("error de tipos");
-            rawAssignment(arrTmp, idx++, exp, null);
-        }
-
-        for(int i = 0; i < list.size(); i++){
-            rawAssignment(tmp, null, arrTmp, i);
+        for(int i = 0; i < sizeOf(arr); i++){
+            rawAssignment(tmp, null, arr, i);
             rawAssignment(id, i, tmp, null);
         }
 
-        return rawAssignment(id, arrTmp);
+        return rawAssignment(id, arr);
     }
 
     // Load array to tmp variable
@@ -179,7 +173,7 @@ public class Printer {
         return tern(e1, "-", tmp2);
     }
 
-    public Object preIncrDecr(String id, String op) {
+    public String preIncrDecr(String id, String op) {
         if (op.equals("++"))
             return tern(id, id, "+", new Integer(1));
         else
@@ -254,41 +248,28 @@ public class Printer {
         return cond;
     }
 
-    public Condition forIn(String id, String forTag, Object arr){
-        String array = "";
-        Integer size = 0;
-        String ident = (id.indexOf('[') == -1) ? id : id.substring(0, id.indexOf('['));
+    public Condition forIn(String id, String forTag, Object array){
+        if (sizeOf(array) <= 0)
+            error("tipo incorrecto");
 
-        if(arr instanceof String){ // array variable
-            array = symTable.lookUp((String) arr);
-            size = sizeOf(arr);
-            if(size <= 0)
-                error("tipo incorrecto");
-        } else { // explicit array
-            array = newTmp(typeOf(ident));
-            size = ((List<Object>) arr).size();
-
-            int i = 0;
-            for(Object exp: (List<Object>) arr)
-                rawAssignment(array, i++, exp, null);
-        }
+        String ident = (id.indexOf('[') == -1) ? id : id.substring(0, id.indexOf('[')); // get id even if you have x[i]
 
         if(typeOf(ident) != typeOf(array))
             error("tipos incompatibles");
 
         String index = newTmp(typeOf(ident));
 
-        rawAssignment(index, null, new Integer(-1), null);
+        rawAssignment(index, "-1");
         label(forTag);
         tern(index, index, "+" , new Integer(1));
-        Condition cond = condition(index, Condition.LOW, size);
+        Condition cond = condition(index, Condition.LOW, sizeOf(array));
         label(cond.getTrueLabel());
         if(id.indexOf('[') == -1){ // Simple ident
             rawAssignment(id, null, array, index);
         } else { // Ident style b[i]
             String tmp = newTmp(typeOf(ident));
             rawAssignment(tmp, null, array, index);
-            rawAssignment(id, null, tmp, null);
+            rawAssignment(id, tmp);
         }
 
         return cond;
@@ -317,7 +298,7 @@ public class Printer {
      */
 
     // asigned = exp; asigned[idx1] = exp; asigned = arr[idx2]; (with casting if needed)
-    private String rawAssignment(String asigned, Object idx1, Object expOrArray, Object idx2) {
+    public String rawAssignment(String asigned, Object idx1, Object expOrArray, Object idx2) {
         String index1 = (idx1 != null) ? "[" + idx1 + "]" : "";
         String index2 = (idx2 != null) ? "[" + idx2 + "]" : "";
 
@@ -327,7 +308,7 @@ public class Printer {
     }
 
     // left = right;
-    private String rawAssignment(String left, Object right) {
+    public String rawAssignment(String left, Object right) {
         out.println("   " + left + " = " + right + ";");
 
         return left;
@@ -337,13 +318,13 @@ public class Printer {
     public void goTo(String label) { out.println("   goto " + label + ";"); }
 
     // if (e1 == e2) goto label;
-    public void ifEqual(Object e1, Object e2, String label) { out.println("   if(" + e1 + " == " + e2 + ") goto " + label + ";"); }
+    public void ifEqual(Object e1, Object e2, String label) { out.println("   if (" + e1 + " == " + e2 + ") goto " + label + ";"); }
 
     // if (e1 != e2) goto label;
-    public void ifNotEqual(Object e1, Object e2, String label) { out.println("   if(" + e1 + " != " + e2 + ") goto " + label + ";"); }
+    public void ifNotEqual(Object e1, Object e2, String label) { out.println("   if (" + e1 + " != " + e2 + ") goto " + label + ";"); }
 
     // if (e1 < e2) goto label;
-    public void ifLower(Object e1, Object e2, String label) { out.println("   if(" + e1 + " < " + e2 + ") goto " + label + ";"); }
+    public void ifLower(Object e1, Object e2, String label) { out.println("   if (" + e1 + " < " + e2 + ") goto " + label + ";"); }
 
     // label:
     public void label(String label) { out.println(label + ":"); }
