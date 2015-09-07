@@ -112,7 +112,7 @@ declInt   ::= IDENT:i                       {: t.declare(i, actualScope, Occurre
        		| IDENT:i ASIG exp:e            {: t.declare(i, actualScope, Occurrence.INT); p.assignment(t.lookUp(i), e); :}
        		| IDENT:i AC ENTERO:size CC   	{: t.declare(i, actualScope, Occurrence.INT, size);:}
 		  	| IDENT:i AC ENTERO:size CC   	{: t.declare(i, actualScope, Occurrence.INT, size); :}
-			  ASIG ALL listaExp:l CLL     	{: p.arrayInit(i, l); :}
+			  ASIG exp:l     				{: p.assignment(t.lookUp(i), l); :}
 			;
 
     // FLOAT declarations
@@ -124,7 +124,7 @@ declFloat ::= IDENT:i                       {: t.declare(i, actualScope, Occurre
             | IDENT:i ASIG exp:e            {: t.declare(i, actualScope, Occurrence.FLOAT); p.assignment(t.lookUp(i), e); :}
             | IDENT:i AC ENTERO:size CC     {: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
             | IDENT:i AC ENTERO:size CC     {: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
-              ASIG ALL listaExp:l CLL       {: p.arrayInit(i, l); :}
+              ASIG exp:l       				{: p.assignment(t.lookUp(i), l); :}
             ;
 
 listaExp ::= listaExp:l COMA exp:e      {: RESULT = p.rawAssignment(l, arrPtr++, e, null); t.setSizeOf(l, arrPtr); if(t.typeOf(l) != t.typeOf(e)) p.error("Los tipos de los elementos de la matriz son diferentes"); :}
@@ -153,14 +153,13 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 assignment    ::= IDENT:i ASIG exp:e  	    {: RESULT = p.assignment(t.lookUp(i), e); :}
 				| IDENT:i AC exp:idx CC
                	  ASIG exp:e        		{: RESULT = p.assignment(t.lookUp(i), idx, e); :}
-				| IDENT:i
-               	  ASIG ALL listaExp:l CLL	{: RESULT = p.arrayInit(i, l); :}
                	;
 
 varOrNumber   ::= IDENT:i					{: RESULT = t.lookUp(i); :}
 				| IDENT:i AC exp:idx CC		{: RESULT = p.loadArray(t.lookUp(i), idx); :}
               	| ENTERO:n              	{: RESULT = n; :}
 			   	| REAL:n                	{: RESULT = n; :}
+			   	| ALL listaExp:l CLL		{: RESULT = l; :}
 			   	;
 
 prePostIncrDecr   ::= incrDecrOp:op IDENT:i         {: RESULT = p.preIncrDecr(t.lookUp(i), op); :}  %prec PREINCR

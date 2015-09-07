@@ -126,6 +126,8 @@ public class SymbolTable {
         return (o instanceof String) && symTable.get(o) != null && sizeOf(o) > 0;
     }
 
+    public boolean isTmp(Object o) { return (o instanceof String) && (((String) o).matches("t[0-9]+") || ((String) o).matches("\\$t[0-9]+")); }
+
     /**
      * DEBUGGING
      */

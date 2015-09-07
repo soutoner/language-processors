@@ -61,24 +61,6 @@ public class Printer {
      * ARRAYS
      */
 
-    // Explicit array initialization
-    public String arrayInit(String id, String arr) {
-        if(sizeOf(id) < sizeOf(arr))
-            error("las matrices no son compatibles");
-
-        if(typeOf(id) != typeOf(arr))
-            error("Error de tipos");
-
-        String tmp = newTmp(typeOf(id));
-
-        for(int i = 0; i < sizeOf(arr); i++){
-            rawAssignment(tmp, null, arr, i);
-            rawAssignment(id, i, tmp, null);
-        }
-
-        return rawAssignment(id, arr);
-    }
-
     // Load array to tmp variable
     public String loadArray(String id, Object idx) {
         String tmp = newTmp(typeOf(id));
@@ -99,7 +81,7 @@ public class Printer {
 
         String tmp = newTmp(typeOf(arr1));
 
-        for(int i = 0; i < sizeOf(arr1); i++){
+        for(int i = 0; i < sizeOf(arr2); i++){
             rawAssignment(tmp, null, arr2, i);
             rawAssignment(arr1, i, tmp, null);
         }
@@ -352,4 +334,6 @@ public class Printer {
     public boolean isEntero(Object o){ return symTable.isEntero(o); }
 
     public boolean isArray(Object o){ return symTable.isArray(o); }
+
+    public boolean isTmp(Object o){ return symTable.isTmp(o); }
 }
