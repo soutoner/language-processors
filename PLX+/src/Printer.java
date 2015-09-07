@@ -27,7 +27,7 @@ public class Printer {
     public String assignment(String id, Object idx, Object exp) {
         // Assign float to int, error
         if(isEntero(id) && isReal(exp))
-            error("tried to assign float value to int");
+            error("Se esta asignando un valor real a una variable enter ");
 
         // Check range
         checkRange(id, idx);
@@ -74,10 +74,10 @@ public class Printer {
     // assign one array to the other
     public String arrayToArrayAssignment(String arr1, Object arr2){
         if(sizeOf(arr1) < sizeOf(arr2))
-            error("las matrices no son compatibles");
+            error("Las matrices no son compatibles");
 
         if(typeOf(arr1) != typeOf(arr2))
-            error("error de tipos");
+            error("Error de tipos");
 
         String tmp = newTmp(typeOf(arr1));
 
