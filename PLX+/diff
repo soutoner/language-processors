@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Usage: `./diff test/TESTNAME` will output diff between the example compiler output, and mine (if they are different).
+
+diff -ys <(bin/plxc $1) <(java -cp bin:../lib/java-cup-11b-runtime.jar PLXC $1);

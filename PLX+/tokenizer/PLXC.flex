@@ -2,18 +2,16 @@ import java_cup.runtime.*;
 
 %%
 
-/* Code (tag handling) */
+// Code (label handling)
 
 %{
-	public static int actualTag = 0;
-
-	public static String newTag(){
-		return "L"+(actualTag++);	
+	public String newLabel(){
+		return Generator.getInstance().newLabel();
 	}
 %}
 
-/*  Declarations */ 
-   
+//  Declarations
+
 %cup
 
 LineTerminator = \r|\n|\r\n
@@ -25,9 +23,9 @@ Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {
 TraditionalComment 	= "/*" [^*] ~"*/" | "/*" "*"+ "/"
 EndOfLineComment 	= "//" {InputCharacter}* {LineTerminator}?
 DocumentationComment    = "/*" "*"+ [^/*] ~"*/"
-HashComment		= "#" {InputCharacter}* {LineTerminator}?
+HashComment		= "#" {InputCharacter}* {LineTerminator}
 
-%%   
+%%
 
 /* Expresions and rules */
 
@@ -37,9 +35,9 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "*"                  		{ return new Symbol(sym.POR); }
     "/"                  		{ return new Symbol(sym.DIV); }
     "%"                  		{ return new Symbol(sym.MOD); }
-    "?"                  		{ return new Symbol(sym.ASK, newTag()); }
-    "++"                  		{ return new Symbol(sym.INCR); }
-    "--"                  		{ return new Symbol(sym.DECR); }
+    "?"                  		{ return new Symbol(sym.ASK, newLabel()); }
+    "++"                  		{ return new Symbol(sym.INCR, yytext()); }
+    "--"                  		{ return new Symbol(sym.DECR, yytext()); }
 /* Precedence */
     "("                  		{ return new Symbol(sym.AP); }
     ")"                  		{ return new Symbol(sym.CP); }
@@ -65,21 +63,21 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}?
     "&&"                 		{ return new Symbol(sym.AND); }
     "||"                 		{ return new Symbol(sym.OR); }
 /* Code */
-    "if"                 		{ return new Symbol(sym.IF, newTag()); }
+    "if"                 		{ return new Symbol(sym.IF, newLabel()); }
     "else"               		{ return new Symbol(sym.ELSE); }
-    "switch"               		{ return new Symbol(sym.SWITCH, newTag()); }
-    "while"              		{ return new Symbol(sym.WHILE, newTag()); }
-    "do"                 		{ return new Symbol(sym.DO, newTag()); }
-    "for"                		{ return new Symbol(sym.FOR, newTag()); }
+    "switch"               		{ return new Symbol(sym.SWITCH, newLabel()); }
+    "while"              		{ return new Symbol(sym.WHILE, newLabel()); }
+    "do"                 		{ return new Symbol(sym.DO, newLabel()); }
+    "for"                		{ return new Symbol(sym.FOR, newLabel()); }
     "print"              		{ return new Symbol(sym.PRINT); }
     "int"              		    { return new Symbol(sym.INT); }
     "float"              		{ return new Symbol(sym.FLOAT); }
-    "to"              		    { return new Symbol(sym.TO, newTag()); }
-    "downto"              		{ return new Symbol(sym.DOWNTO, newTag()); }
+    "to"              		    { return new Symbol(sym.TO, newLabel()); }
+    "downto"              		{ return new Symbol(sym.DOWNTO, newLabel()); }
     "step"              		{ return new Symbol(sym.STEP); }
-    "break"              		{ return new Symbol(sym.BREAK); }
-    "case"              		{ return new Symbol(sym.CASE, newTag()); }
-    "default"              		{ return new Symbol(sym.DEFAULT, newTag()); }
+    "break"              		{ return new Symbol(sym.BREAK, yytext()); }
+    "case"              		{ return new Symbol(sym.CASE, newLabel()); }
+    "default"              		{ return new Symbol(sym.DEFAULT, newLabel()); }
     "in"              		    { return new Symbol(sym.IN); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }

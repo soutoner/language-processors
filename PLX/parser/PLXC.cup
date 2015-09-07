@@ -19,12 +19,12 @@ action code {:
 :}
 
 /*Terminals */
-terminal				MAS, MENOS, POR, DIV, MOD, INCR, DECR, UMINUS, PREINCR;
+terminal				MAS, MENOS, POR, DIV, MOD, UMINUS, PREINCR;
 terminal				AP, CP, ALL, CLL;
 terminal				ASIG, PYC, COMA;
 terminal				EQ, NEQ, LOW, LOE, GRE, GOE, NOT, AND, OR;
 terminal				ELSE, PRINT, INT, STEP;
-terminal String			IF, WHILE, DO, FOR, TO, DOWNTO;
+terminal String			IF, WHILE, DO, FOR, TO, DOWNTO, INCR, DECR;
 terminal Integer		ENTERO;
 terminal String			IDENT;
 
@@ -124,8 +124,8 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1 + " + " + e2); :}
 		| error                         {: p.error("syntax error"); :}
 		;
 
-incrDecrOp    ::= INCR                  {: RESULT = "++"; :}
-                | DECR                  {: RESULT = "--"; :}
+incrDecrOp    ::= INCR:i                {: RESULT = i; :}
+                | DECR:d                {: RESULT = d; :}
                 ;
 
 cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}

@@ -35,8 +35,8 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}
     "*"                         { return new Symbol(sym.POR); }
     "/"                         { return new Symbol(sym.DIV); }
     "%"                  		{ return new Symbol(sym.MOD); }
-    "++"                  		{ return new Symbol(sym.INCR); }
-    "--"                  		{ return new Symbol(sym.DECR); }
+    "++"                  		{ return new Symbol(sym.INCR, yytext()); }
+    "--"                  		{ return new Symbol(sym.DECR, yytext()); }
 // Precedence
     "("                         { return new Symbol(sym.AP); }
     ")"                         { return new Symbol(sym.CP); }

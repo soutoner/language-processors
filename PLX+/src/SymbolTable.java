@@ -4,16 +4,12 @@ import java.util.*;
 public class SymbolTable {
 
     private Map<String, List<Occurrence>> symTable;     // Map of identifier -> list of occurrence
-    private Printer out;                                // Variable for printing
+    private Printer printer;                                // Variable for printing
 
     public SymbolTable() {
         symTable = new HashMap<String, List<Occurrence>>();
-        out = new Printer();
+        printer = new Printer();
     }
-
-    /**
-     *  Symbol Table management
-     */
 
     // Declare variables (array) into Symbol Table
     public void declare(String id, int actualScope, int type, int size) {
@@ -26,7 +22,7 @@ public class SymbolTable {
             Occurrence closerOccurrence = occurrences.get(0);
 
             if (closerOccurrence.getScope() == actualScope) { // multiple declaration of variable, throw error
-                out.error("variable \'" + id + "\' ya declarada");
+                printer.error("variable \'" + id + "\' ya declarada");
             } else if (closerOccurrence.getScope() < actualScope) { // not declared in this scope so add occurrence at beginning
                 occurrences.add(0, new Occurrence(actualScope, type, size));
             } else {
@@ -47,7 +43,7 @@ public class SymbolTable {
         List<Occurrence> occurrences = symTable.get(id); // occurrences of an identifier
 
         if (occurrences == null) { // variable non declared, throw error
-            out.error("variable \'" + id + "\' no declarada");
+            printer.error("variable \'" + id + "\' no declarada");
             return null;
         } else { // identifier is declared, fetch closer occurrence
             if (occurrences.size() > 1) { // variable declared more than one, append suffix
@@ -87,19 +83,11 @@ public class SymbolTable {
             return Occurrence.INT;
         } else if (o instanceof Double) { // Double
             return Occurrence.FLOAT;
-        } else { // String
-            if (isTmp(o)) {
-                if (((String) o).charAt(0) == 't') { // INT tmp
-                    return Occurrence.INT;
-                } else { // FLOAT tmp
-                    return Occurrence.FLOAT;
-                }
-            } else { // Ident, fetch closer occurrence type
-                if(((String) o).matches(".*_[0-9]+$")) // Variable in a inner scope
-                    return symTable.get(((String) o).replaceAll("_[0-9]+$", "")).get(0).getType();
-                else
-                    return symTable.get(o).get(0).getType();
-            }
+        } else { // Ident or tmp, fetch closer occurrence type
+            if(((String) o).matches(".*_[0-9]+$")) // Variable in a inner scope
+                return symTable.get(((String) o).replaceAll("_[0-9]+$", "")).get(0).getType();
+            else
+                return symTable.get(o).get(0).getType();
         }
     }
 
@@ -124,18 +112,14 @@ public class SymbolTable {
         return (o instanceof String) && symTable.get(o) != null && sizeOf(o) > 0;
     }
 
-    public boolean isTmp(Object o) {
-        return (o instanceof String) && (((String) o).matches("t[0-9]+") || ((String) o).matches("\\$t[0-9]+"));
-    }
-
     /**
      * DEBUGGING
      */
 
-    private void printSymTable() {
-        out.raw("# --------------------");
-        out.raw("# ID\tSCOPE\tTYPE");
-        out.raw("# --------------------");
+    public void printSymTable() {
+        printer.comment("--------------------");
+        printer.comment("ID\tSCOPE\tTYPE");
+        printer.comment("--------------------");
 
         Iterator it = symTable.entrySet().iterator();
 
@@ -146,7 +130,7 @@ public class SymbolTable {
 
             for (int i = 0; i < occurrences.size(); i++) {
                 Occurrence occurrence = occurrences.get(i); // get occurrences of a identifier
-                out.raw("# " + entry.getKey() + "\t" + occurrence);
+                printer.comment(entry.getKey() + "\t" + occurrence);
             }
         }
     }
