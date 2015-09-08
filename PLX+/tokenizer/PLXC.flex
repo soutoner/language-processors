@@ -38,6 +38,10 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}
     "?"                  		{ return new Symbol(sym.ASK, newLabel()); }
     "++"                  		{ return new Symbol(sym.INCR, yytext()); }
     "--"                  		{ return new Symbol(sym.DECR, yytext()); }
+    "+="                  		{ return new Symbol(sym.MASEQ); }
+    "-="                  		{ return new Symbol(sym.SUBEQ); }
+    "*="                  		{ return new Symbol(sym.POREQ); }
+    "/="                  		{ return new Symbol(sym.DIVEQ); }
 /* Precedence */
     "("                  		{ return new Symbol(sym.AP); }
     ")"                  		{ return new Symbol(sym.CP); }
@@ -79,6 +83,8 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}
     "case"              		{ return new Symbol(sym.CASE, newLabel()); }
     "default"              		{ return new Symbol(sym.DEFAULT, newLabel()); }
     "in"              		    { return new Symbol(sym.IN); }
+    "true"              		{ return new Symbol(sym.TRUE); }
+    "false"              		{ return new Symbol(sym.FALSE); }
 /* Numbers */
     0|[1-9][0-9]*        		        { return new Symbol(sym.ENTERO, new Integer(yytext()) ); }
     [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?   { return new Symbol(sym.REAL, new Double(yytext())); }

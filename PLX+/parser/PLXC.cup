@@ -26,9 +26,9 @@ action code {:
 /*Terminals */
 terminal					MAS, MENOS, POR, DIV, MOD, UMINUS, PREINCR;
 terminal					AP, CP, ALL, CLL, AC, CC;
-terminal					ASIG, PYC, COMA, PP;
+terminal					ASIG, PYC, COMA, PP, MASEQ, SUBEQ, POREQ, DIVEQ;
 terminal					EQ, NEQ, LOW, LOE, GRE, GOE, NOT, AND, OR;
-terminal					ELSE, PRINT, STEP, IN;
+terminal					TRUE, FALSE, ELSE, PRINT, STEP, IN;
 terminal					INT, FLOAT;
 terminal String				IF, WHILE, DO, FOR, TO, DOWNTO, INCR, DECR;
 terminal String				SWITCH, CASE, DEFAULT, BREAK, ASK;
@@ -39,9 +39,9 @@ terminal Double				REAL;
 /* Non terminals */
 non terminal				sent, listaSent;
 non terminal				declInt, listaDeclInt, declFloat, listaDeclFloat;
-non terminal				elsePart;
-non terminal				ifSent, switchSent, defaultCase;
-non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
+non terminal				ifSent, elsePart;
+non terminal				switchSent, defaultCase;
+non terminal String     	assignment, opAssignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
 non terminal Object			exp, stepPart, varOrNumber, arrayPart;
@@ -66,6 +66,7 @@ listaSent ::= sent
 
 sent  ::= assignment PYC
 		| prePostIncrDecr PYC
+		| opAssignment PYC
 		| ifSent
 		| WHILE:whileLabel				{: p.label(whileLabel); :}
 		  AP cond:c CP					{: p.label(c.getFalseLabel()); :}
@@ -137,6 +138,7 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| MENOS exp:e					{: RESULT = p.tern(new Integer(0), "-", e); :}  %prec UMINUS
 		| AP exp:e CP					{: RESULT = e; :}
 		| assignment:a					{: RESULT = a; :}
+		| opAssignment:a				{: RESULT = a; :}
 	  	| varOrNumber:n                 {: RESULT = n; :}
 	  	| prePostIncrDecr:p				{: RESULT = p; :}
 		| AP INT CP exp:e				{: RESULT = p.casting(e, Occurrence.INT); :}
@@ -180,6 +182,8 @@ cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
 		| cond:c1 OR					{: p.label(c1.getFalseLabel()); :}
 		  cond:c2						{: RESULT = c2; p.label(c1.getTrueLabel()); p.goTo(c2.getFalseLabel()); :}
 		| AP cond:c CP					{: RESULT = c; :}
+		| TRUE							{: RESULT = new Condition(); p.goTo(((Condition) RESULT).getTrueLabel()); :}
+		| FALSE							{: RESULT = new Condition(); p.goTo(((Condition) RESULT).getFalseLabel()); :}
 		;
 
 // Optional parts
@@ -203,6 +207,13 @@ identPart ::= IDENT:i				    {: RESULT = t.lookUp(i); :}
 arrayPart ::= IDENT:arr             	{: RESULT = arr; :}
 		  	| ALL listaExp:l CLL    	{: RESULT = l; :}
 			;
+
+// Operation assignment
+opAssignment  ::= IDENT:i MASEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "+", e); :}
+				| IDENT:i SUBEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "-", e); :}
+				| IDENT:i POREQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "*", e); :}
+				| IDENT:i DIVEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "/", e); :}
+				;
 
 // SWITCH sent
 switchSent ::= SWITCH:s AP exp:e CP     {: switchVar = e; switchLabel = s; :}
