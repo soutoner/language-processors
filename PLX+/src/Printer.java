@@ -116,6 +116,20 @@ public class Printer {
         label(cond.getFalseLabel());
     }
 
+    public String mergeArrays(String arr1, String arr2){
+        int mergedSize = sizeOf(arr1) + sizeOf(arr2);
+        String tmp = newTmp(typeOf(arr1));
+
+        for(int i = sizeOf(arr1); i < mergedSize; i++){
+            rawAssignment(tmp, null, arr2, i-sizeOf(arr1));
+            rawAssignment(arr1, i, tmp, null);
+        }
+
+        symTable.setSizeOf(arr1, mergedSize);
+
+        return arr1;
+    }
+
     /**
      * ARITHMETIC OPERATIONS
      */
@@ -374,6 +388,11 @@ public class Printer {
                 return false;
         } else if (!isMultiArray(arr1) && !isMultiArray(arr2)){
             if(sizeOf(arr1) >= sizeOf(arr2))
+                return true;
+            else
+                return false;
+        } else if (isMultiArray(arr1) && !isMultiArray(arr2)){
+            if(sizeOf(arr1, 0)*sizeOf(arr1, 1) >= sizeOf(arr2))
                 return true;
             else
                 return false;

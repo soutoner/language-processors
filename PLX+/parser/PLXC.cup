@@ -41,7 +41,7 @@ non terminal				sent, listaSent;
 non terminal				declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal				ifSent, elsePart;
 non terminal				switchSent, defaultCase;
-non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
+non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp, listaConst;
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
 non terminal Object			exp, stepPart, varOrNumber, arrayPart;
@@ -132,9 +132,8 @@ dimens    ::= AC ENTERO:size CC				{: RESULT = new ArrayList<Integer>() {{ add(s
 			| dimens:l AC ENTERO:size CC	{: l.add(size); RESULT = l; :}
 			;
 
-listaConst    ::= listaConst COMA ALL listaExp:l CLL		{: RESULT = l; :}
-				| ALL listaExp:l1 CLL COMA 					{: :}
-				  ALL listaExp:l2 CLL 						{: RESULT = l1; :}
+listaConst    ::= listaConst:r COMA ALL listaExp:l CLL			{: RESULT = p.mergeArrays(r, l); :}
+				| ALL listaExp:l1 CLL COMA ALL listaExp:l2 CLL	{: RESULT = p.mergeArrays(l1, l2); :}
 				;
 
 listaExp ::= listaExp:l COMA exp:e      {: RESULT = p.rawAssignment(l, arrPtr++, e, null); t.setSizeOf(l, arrPtr); if(t.typeOf(l) != t.typeOf(e)) p.error("Los tipos de los elementos de la matriz son diferentes"); :}
