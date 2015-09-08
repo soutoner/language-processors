@@ -12,31 +12,31 @@ public class SymbolTable {
     }
 
     // Declare variables (array) into Symbol Table
-    public String declare(String id, int actualScope, int type, int size) {
+    public String declare(String id, int actualScope, int type, List<Integer> dimens) {
         List<Occurrence> occurrences = symTable.get(id); // occurrences of an identifier
 
         if (occurrences == null) { // we need to add it to the symbol table
             symTable.put(id, new ArrayList<Occurrence>());
-            symTable.get(id).add(new Occurrence(actualScope, type, size));
+            symTable.get(id).add(new Occurrence(actualScope, type, dimens));
         } else { // identifier is declared, fetch first occurrence
             Occurrence closerOccurrence = occurrences.get(0);
 
             if (closerOccurrence.getScope() == actualScope) { // multiple declaration of variable, throw error
                 printer.error("variable \'" + id + "\' ya declarada");
             } else if (closerOccurrence.getScope() < actualScope) { // not declared in this scope so add occurrence at beginning
-                occurrences.add(0, new Occurrence(actualScope, type, size));
+                occurrences.add(0, new Occurrence(actualScope, type, dimens));
             } else {
                 throw new RuntimeException("Purge is not working correctly");
             }
         }
 
-        // printSymTable();
+        //printSymTable();
         return id;
     }
 
     // Declare variables into Symbol Table
     public String declare(String id, int actualScope, int type) {
-        declare(id, actualScope, type, 0);
+        declare(id, actualScope, type, null);
 
         return id;
     }
@@ -110,6 +110,11 @@ public class SymbolTable {
         return (symTable.get(o) != null) ? symTable.get(o).get(0).getSize() : 0;
     }
 
+    // Returns the size of a variable (multi array) (if not in the symbolTable, always 0)
+    public int sizeOf(Object o, int idx) {
+        return (symTable.get(o) != null) ? symTable.get(o).get(0).getSize(idx) : 0;
+    }
+
     /**
      * BOOLEANS
      */
@@ -123,7 +128,11 @@ public class SymbolTable {
     }
 
     public boolean isArray(Object o){
-        return (o instanceof String) && symTable.get(o) != null && sizeOf(o) > 0;
+        return (o instanceof String) && symTable.get(o) != null && symTable.get(o).get(0).isArray();
+    }
+
+    public boolean isMultiArray(Object o){
+        return (o instanceof String) && symTable.get(o) != null && symTable.get(o).get(0).isMultiArray();
     }
 
     public boolean isTmp(Object o) { return (o instanceof String) && (((String) o).matches("t[0-9]+") || ((String) o).matches("\\$t[0-9]+")); }
@@ -133,6 +142,7 @@ public class SymbolTable {
      */
 
     public void printSymTable() {
+        printer.comment("\t");
         printer.comment("--------------------");
         printer.comment("ID\tSCOPE\tTYPE");
         printer.comment("--------------------");
@@ -149,5 +159,6 @@ public class SymbolTable {
                 printer.comment(entry.getKey() + "\t" + occurrence);
             }
         }
+        printer.comment("\t");
     }
 }

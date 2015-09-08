@@ -45,6 +45,8 @@ non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, lis
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
 non terminal Object			exp, stepPart, varOrNumber, arrayPart;
+non terminal List<Object>   dimensAsig;
+non terminal List<Integer>	dimens;
 
 /* Precedence */
 precedence left         	COMA;
@@ -109,8 +111,8 @@ listaDeclInt  ::= listaDeclInt COMA declInt
 
 declInt   ::= IDENT:i                       {: t.declare(i, actualScope, Occurrence.INT); :}
        		| IDENT:i ASIG exp:e            {: t.declare(i, actualScope, Occurrence.INT); p.assignment(t.lookUp(i), e); :}
-       		| IDENT:i AC ENTERO:size CC   	{: t.declare(i, actualScope, Occurrence.INT, size);:}
-		  	| IDENT:i AC ENTERO:size CC   	{: t.declare(i, actualScope, Occurrence.INT, size); :}
+       		| IDENT:i dimens:size		   	{: t.declare(i, actualScope, Occurrence.INT, size); :}
+		  	| IDENT:i dimens:size 		   	{: t.declare(i, actualScope, Occurrence.INT, size); :}
 			  ASIG exp:l     				{: p.assignment(t.lookUp(i), l); :}
 			;
 
@@ -121,13 +123,22 @@ listaDeclFloat ::= listaDeclFloat COMA declFloat
 
 declFloat ::= IDENT:i                       {: t.declare(i, actualScope, Occurrence.FLOAT); :}
             | IDENT:i ASIG exp:e            {: t.declare(i, actualScope, Occurrence.FLOAT); p.assignment(t.lookUp(i), e); :}
-            | IDENT:i AC ENTERO:size CC     {: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
-            | IDENT:i AC ENTERO:size CC     {: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
+            | IDENT:i dimens:size    		{: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
+            | IDENT:i dimens:size CC     	{: t.declare(i, actualScope, Occurrence.FLOAT, size); :}
               ASIG exp:l       				{: p.assignment(t.lookUp(i), l); :}
             ;
 
+dimens    ::= AC ENTERO:size CC				{: RESULT = new ArrayList<Integer>() {{ add(size); }}; :}
+			| dimens:l AC ENTERO:size CC	{: l.add(size); RESULT = l; :}
+			;
+
+listaConst    ::= listaConst COMA ALL listaExp:l CLL		{: RESULT = l; :}
+				| ALL listaExp:l1 CLL COMA 					{: :}
+				  ALL listaExp:l2 CLL 						{: RESULT = l1; :}
+				;
+
 listaExp ::= listaExp:l COMA exp:e      {: RESULT = p.rawAssignment(l, arrPtr++, e, null); t.setSizeOf(l, arrPtr); if(t.typeOf(l) != t.typeOf(e)) p.error("Los tipos de los elementos de la matriz son diferentes"); :}
-		   | exp:e                      {: arrPtr = 0; RESULT = p.rawAssignment(p.newTmpArray(t.typeOf(e), 0), arrPtr++, e, null); :}
+		   | exp:e                      {: arrPtr = 0; RESULT = p.rawAssignment(p.newTmpArray(t.typeOf(e), new ArrayList<Integer>() {{ add(0); }}), arrPtr++, e, null); :}
 		   ;
 
 exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
@@ -139,7 +150,8 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| AP exp:e CP					{: RESULT = e; :}
 		| assignment:a					{: RESULT = a; :}
 	  	| varOrNumber:n                 {: RESULT = n; :}
-	  	| ALL listaExp:l CLL			{: RESULT = l; :}
+	  	| ALL listaExp:l CLL		    {: RESULT = l; :}
+	  	| ALL listaConst:l CLL			{: RESULT = l; :}
 	  	| prePostIncrDecr:p				{: RESULT = p; :}
 		| CASTINT exp:e					{: RESULT = p.casting(e, Occurrence.INT); :}
 	  	| CASTFLOAT
@@ -151,28 +163,32 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		;
 
 assignment    ::= IDENT:i ASIG exp:e  	    {: RESULT = p.assignment(t.lookUp(i), e); :}
-				| IDENT:i AC exp:idx CC
+				| IDENT:i dimensAsig:idx
                	  ASIG exp:e        		{: RESULT = p.assignment(t.lookUp(i), idx, e); :}
                	| IDENT:i MASEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "+", e); :}
-               	| IDENT:i AC exp:idx CC
+               	| IDENT:i dimensAsig:idx
                	  MASEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
                	  exp:e						{: RESULT = p.tern(RESULT, RESULT, "+", e); RESULT = p.assignment(i, idx, RESULT); :}
 				| IDENT:i SUBEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "-", e); :}
-				| IDENT:i AC exp:idx CC
+				| IDENT:i dimensAsig:idx
 				  SUBEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
 				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "-", e); RESULT = p.assignment(i, idx, RESULT); :}
 				| IDENT:i POREQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "*", e); :}
-				| IDENT:i AC exp:idx CC
+				| IDENT:i dimensAsig:idx
 			  	  POREQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
 				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "*", e); RESULT = p.assignment(i, idx, RESULT); :}
 				| IDENT:i DIVEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "/", e); :}
-				| IDENT:i AC exp:idx CC
+				| IDENT:i dimensAsig:idx
 				  DIVEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
 				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "/", e); RESULT = p.assignment(i, idx, RESULT); :}
                	;
 
+dimensAsig    ::= AC exp:idx CC					{: RESULT = new ArrayList<Object>() {{ add(idx); }}; :}
+				| dimensAsig:l AC exp:idx CC	{: l.add(idx); RESULT = l; :}
+				;
+
 varOrNumber   ::= IDENT:i					{: RESULT = t.lookUp(i); :}
-                | IDENT:i AC exp:idx CC		{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+                | IDENT:i dimensAsig:idx	{: RESULT = p.loadArray(t.lookUp(i), idx); :}
 				| ENTERO:n              	{: RESULT = n; :}
                 | REAL:n                	{: RESULT = n; :}
 				;
@@ -216,7 +232,7 @@ stepPart  ::= STEP exp:e                {: RESULT = e; :}
             ;
 
 identPart ::= IDENT:i				    {: RESULT = t.lookUp(i); :}
-		  	| IDENT:i AC exp:idx CC     {: RESULT = t.lookUp(i) + "[" + idx + "]"; :}
+		  	| IDENT:i dimensAsig:idx    {: RESULT = t.lookUp(i) + idx; :}
 		  	;
 
 arrayPart ::= IDENT:arr             	{: RESULT = arr; :}

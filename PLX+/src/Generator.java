@@ -1,4 +1,5 @@
 import java.io.PrintStream;
+import java.util.List;
 
 public class Generator {
 
@@ -28,15 +29,15 @@ public class Generator {
 
     public String newLabel(){ return "L" + actualLabel++; }
 
-    public String newTmpArray(int type, int size){
+    public String newTmpArray(int type, List<Integer> dimens){
         String tmp = "$t" + actualTmp++;
 
-        symTable.declare(tmp, 0, type, size);
+        symTable.declare(tmp, 0, type, dimens);
 
         return tmp;
     }
 
     public String newTmp(int type){
-        return newTmpArray(type, 0);
+        return newTmpArray(type, null);
     }
 }

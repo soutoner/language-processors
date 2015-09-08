@@ -1,4 +1,5 @@
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Printer {
@@ -15,7 +16,7 @@ public class Printer {
     }
 
     // Creates temporary array variables (String tag)
-    public String newTmpArray(int type, int size) {
+    public String newTmpArray(int type, List<Integer> size) {
         return Generator.getInstance().newTmpArray(type, size);
     }
 
@@ -24,7 +25,7 @@ public class Printer {
      */
 
     // Assignment ARR[i] = EXP
-    public String assignment(String id, Object idx, Object exp) {
+    public String assignment(String id, List<Object> idx, Object exp) {
         // Assign float to int, error
         if(isEntero(id) && isReal(exp))
             error("Se esta asignando un valor real a una variable enter ");
@@ -62,18 +63,18 @@ public class Printer {
      */
 
     // Load array to tmp variable
-    public String loadArray(String id, Object idx) {
+    public String loadArray(String id, List<Object> idx) {
         String tmp = newTmp(typeOf(id));
 
         // Check Range
         checkRange(id, idx);
 
-        return rawAssignment(tmp, null, id, idx );
+        return rawAssignment(tmp, null, id, idx);
     }
 
     // assign one array to the other
     public String arrayToArrayAssignment(String arr1, Object arr2){
-        if(sizeOf(arr1) < sizeOf(arr2))
+        if(! sizeEqual(arr1, arr2))
             error("Las matrices no son compatibles");
 
         if(typeOf(arr1) != typeOf(arr2))
@@ -90,12 +91,19 @@ public class Printer {
     }
 
     // Check if the idx is in range of the array
-    public void checkRange(String id, Object idx) {
+    public void checkRange(String id, List<Object> idx) {
         if(!isArray(id))
             return;
 
-        int size = sizeOf(id);
+        if(idx.size() == 1){ // unidimensional array
+            rawCheckRange(idx.get(0), sizeOf(id));
+        } else {    // multidimensional array
+            rawCheckRange(idx.get(0), sizeOf(id, 0)); // Check first dimension
+            rawCheckRange(idx.get(1), sizeOf(id, 1)); // Check second dimension
+        }
+    }
 
+    public void rawCheckRange(Object idx, Object size){
         Condition cond = new Condition();
         comment("Comprobacion de rango");
         ifLower(idx, "0", cond.getTrueLabel());
@@ -243,7 +251,7 @@ public class Printer {
 
         rawAssignment(index, "-1");
         label(forTag);
-        tern(index, index, "+" , new Integer(1));
+        tern(index, index, "+", new Integer(1));
         Condition cond = condition(index, Condition.LOW, sizeOf(array));
         label(cond.getTrueLabel());
         if(id.indexOf('[') == -1){ // Simple ident
@@ -278,6 +286,33 @@ public class Printer {
     /**
      * AVAILABLE INSTRUCTIONS
      */
+
+    // asigned = exp; asigned[idx1] = exp; asigned = arr[idx2]; (with casting if needed)
+    public String rawAssignment(String asigned, List<Object> idx1, Object expOrArray, List<Object> idx2) {
+        Object index1 = "", index2 = "";
+
+        if(idx1 != null) {
+            if (idx1.size() > 1) {
+                String tmp = tern(sizeOf(asigned, 1), "*", idx1.get(0));
+                index1 = "[" + tern(tmp, tmp, "+", idx1.get(1)) + "]";
+            } else {
+                index1 = idx1;
+            }
+        }
+
+        if(idx2 != null) {
+            if (idx2.size() > 1) {
+                String tmp = tern(sizeOf(expOrArray, 1), "*", idx2.get(0));
+                index2 = "[" + tern(tmp, tmp, "+", idx2.get(1)) + "]";
+            } else {
+                index2 = idx2;
+            }
+        }
+
+        rawAssignment(asigned + index1, expOrArray.toString() + index2);
+
+        return asigned;
+    }
 
     // asigned = exp; asigned[idx1] = exp; asigned = arr[idx2]; (with casting if needed)
     public String rawAssignment(String asigned, Object idx1, Object expOrArray, Object idx2) {
@@ -325,15 +360,35 @@ public class Printer {
 
     public int sizeOf(Object o) { return symTable.sizeOf(o); }
 
+    public int sizeOf(Object o, int idx) { return symTable.sizeOf(o, idx); }
+
     /**
      * BOOLEANS
      */
+
+    public boolean sizeEqual(String arr1, Object arr2){
+        if(isMultiArray(arr1) && isMultiArray(arr2)){
+            if(sizeOf(arr1, 0) == sizeOf(arr2, 0) && sizeOf(arr1, 1) == sizeOf(arr2, 0))
+                return true;
+            else
+                return false;
+        } else if (!isMultiArray(arr1) && !isMultiArray(arr2)){
+            if(sizeOf(arr1) >= sizeOf(arr2))
+                return true;
+            else
+                return false;
+        } else {
+            return false;
+        }
+    }
 
     public boolean isReal(Object o){ return symTable.isReal(o); }
 
     public boolean isEntero(Object o){ return symTable.isEntero(o); }
 
     public boolean isArray(Object o){ return symTable.isArray(o); }
+
+    public boolean isMultiArray(Object o){ return symTable.isMultiArray(o); }
 
     public boolean isTmp(Object o){ return symTable.isTmp(o); }
 }
