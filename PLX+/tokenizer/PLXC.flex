@@ -42,6 +42,8 @@ HashComment		= "#" {InputCharacter}* {LineTerminator}
     "-="                  		{ return new Symbol(sym.SUBEQ); }
     "*="                  		{ return new Symbol(sym.POREQ); }
     "/="                  		{ return new Symbol(sym.DIVEQ); }
+    "(int)"                     { return new Symbol(sym.CASTINT); }
+    "(float)"                   { return new Symbol(sym.CASTFLOAT); }
 /* Precedence */
     "("                  		{ return new Symbol(sym.AP); }
     ")"                  		{ return new Symbol(sym.CP); }

@@ -28,7 +28,7 @@ terminal					MAS, MENOS, POR, DIV, MOD, UMINUS, PREINCR;
 terminal					AP, CP, ALL, CLL, AC, CC;
 terminal					ASIG, PYC, COMA, PP, MASEQ, SUBEQ, POREQ, DIVEQ;
 terminal					EQ, NEQ, LOW, LOE, GRE, GOE, NOT, AND, OR;
-terminal					TRUE, FALSE, ELSE, PRINT, STEP, IN;
+terminal					TRUE, FALSE, CASTINT, CASTFLOAT, ELSE, PRINT, STEP, IN;
 terminal					INT, FLOAT;
 terminal String				IF, WHILE, DO, FOR, TO, DOWNTO, INCR, DECR;
 terminal String				SWITCH, CASE, DEFAULT, BREAK, ASK;
@@ -48,16 +48,17 @@ non terminal Object			exp, stepPart, varOrNumber, arrayPart;
 
 /* Precedence */
 precedence left         	COMA;
-precedence right        	ASIG;
+precedence right        	ASIG, MASEQ, SUBEQ, POREQ, DIVEQ;
+precedence right			ASK;
 precedence left         	OR;
 precedence left         	AND;
 precedence left         	EQ, NEQ;
 precedence left         	LOW, LOE, GRE, GOE;
 precedence left         	MAS, MENOS;
 precedence left         	POR, DIV, MOD;
-precedence right        	UMINUS, PREINCR;
-precedence left         	INCR, DECR;
-precedence left         	ELSE;
+precedence right        	UMINUS, PREINCR, NOT, CASTINT, CASTFLOAT;
+precedence left         	INCR, DECR, AC, CC, AP, CP;
+precedence nonassoc			IF, ELSE;
 
 /* Grammar */
 listaSent ::= sent
@@ -141,8 +142,8 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| opAssignment:a				{: RESULT = a; :}
 	  	| varOrNumber:n                 {: RESULT = n; :}
 	  	| prePostIncrDecr:p				{: RESULT = p; :}
-		| AP INT CP exp:e				{: RESULT = p.casting(e, Occurrence.INT); :}
-	  	| AP FLOAT CP
+		| CASTINT exp:e					{: RESULT = p.casting(e, Occurrence.INT); :}
+	  	| CASTFLOAT
           varOrNumber:n1 				{: RESULT = p.casting(n1, Occurrence.FLOAT); :}
           DIV varOrNumber:n2			{: Object e2 = p.casting(n2, Occurrence.FLOAT); RESULT = p.tern(RESULT, "/", e2); :}
 		| AP cond:c CP ASK:label
