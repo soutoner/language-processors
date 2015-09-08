@@ -40,7 +40,7 @@ terminal Double				REAL;
 non terminal				sent, listaSent;
 non terminal				declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal				elsePart;
-non terminal				switchSent, defaultCase;
+non terminal				ifSent, switchSent, defaultCase;
 non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
@@ -66,9 +66,7 @@ listaSent ::= sent
 
 sent  ::= assignment PYC
 		| prePostIncrDecr PYC
-		| IF:endIf AP cond:c CP			{: p.label(c.getTrueLabel()); :}
-		  sent							{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
-		  elsePart						{: p.label(endIf); :}
+		| ifSent
 		| WHILE:whileLabel				{: p.label(whileLabel); :}
 		  AP cond:c CP					{: p.label(c.getFalseLabel()); :}
 		  sent							{: p.goTo(whileLabel); p.goTo(c.getTrueLabel()); :}
@@ -185,6 +183,10 @@ cond  ::= exp:e1 EQ exp:e2				{: RESULT = p.condition(e1, Condition.EQ, e2); :}
 		;
 
 // Optional parts
+ifSent    ::= IF:endIf AP cond:c CP 	{: p.label(c.getTrueLabel()); :}
+			  sent						{: p.goTo(endIf); p.label(c.getFalseLabel()); :}
+			  elsePart					{: p.label(endIf); :}
+			;
 
 elsePart  ::= ELSE sent
 			|
@@ -208,7 +210,7 @@ switchSent ::= SWITCH:s AP exp:e CP     {: switchVar = e; switchLabel = s; :}
                defaultCase CLL          {: p.label(s); :}
              ;
 
-listaCase ::= listaCase case
+listaCase ::= listaCase case:c			{: RESULT = c; :}
             | case:c                    {: RESULT = c; :}
             ;
 
