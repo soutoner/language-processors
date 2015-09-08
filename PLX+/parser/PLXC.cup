@@ -41,7 +41,7 @@ non terminal				sent, listaSent;
 non terminal				declInt, listaDeclInt, declFloat, listaDeclFloat;
 non terminal				ifSent, elsePart;
 non terminal				switchSent, defaultCase;
-non terminal String     	assignment, opAssignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
+non terminal String     	assignment, prePostIncrDecr, incrDecrOp, identPart, listaExp;
 non terminal String			case, listaCase, breakPart;
 non terminal Condition		cond;
 non terminal Object			exp, stepPart, varOrNumber, arrayPart;
@@ -67,7 +67,6 @@ listaSent ::= sent
 
 sent  ::= assignment PYC
 		| prePostIncrDecr PYC
-		| opAssignment PYC
 		| ifSent
 		| WHILE:whileLabel				{: p.label(whileLabel); :}
 		  AP cond:c CP					{: p.label(c.getFalseLabel()); :}
@@ -139,8 +138,8 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 		| MENOS exp:e					{: RESULT = p.tern(new Integer(0), "-", e); :}  %prec UMINUS
 		| AP exp:e CP					{: RESULT = e; :}
 		| assignment:a					{: RESULT = a; :}
-		| opAssignment:a				{: RESULT = a; :}
 	  	| varOrNumber:n                 {: RESULT = n; :}
+	  	| ALL listaExp:l CLL			{: RESULT = l; :}
 	  	| prePostIncrDecr:p				{: RESULT = p; :}
 		| CASTINT exp:e					{: RESULT = p.casting(e, Occurrence.INT); :}
 	  	| CASTFLOAT
@@ -154,14 +153,29 @@ exp   ::= exp:e1 MAS exp:e2				{: RESULT = p.tern(e1, "+", e2); :}
 assignment    ::= IDENT:i ASIG exp:e  	    {: RESULT = p.assignment(t.lookUp(i), e); :}
 				| IDENT:i AC exp:idx CC
                	  ASIG exp:e        		{: RESULT = p.assignment(t.lookUp(i), idx, e); :}
+               	| IDENT:i MASEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "+", e); :}
+               	| IDENT:i AC exp:idx CC
+               	  MASEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+               	  exp:e						{: RESULT = p.tern(RESULT, RESULT, "+", e); RESULT = p.assignment(i, idx, RESULT); :}
+				| IDENT:i SUBEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "-", e); :}
+				| IDENT:i AC exp:idx CC
+				  SUBEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "-", e); RESULT = p.assignment(i, idx, RESULT); :}
+				| IDENT:i POREQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "*", e); :}
+				| IDENT:i AC exp:idx CC
+			  	  POREQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "*", e); RESULT = p.assignment(i, idx, RESULT); :}
+				| IDENT:i DIVEQ exp:e		{: RESULT = p.tern(t.lookUp(i), i, "/", e); :}
+				| IDENT:i AC exp:idx CC
+				  DIVEQ 					{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+				  exp:e						{: RESULT = p.tern(RESULT, RESULT, "/", e); RESULT = p.assignment(i, idx, RESULT); :}
                	;
 
 varOrNumber   ::= IDENT:i					{: RESULT = t.lookUp(i); :}
-				| IDENT:i AC exp:idx CC		{: RESULT = p.loadArray(t.lookUp(i), idx); :}
-              	| ENTERO:n              	{: RESULT = n; :}
-			   	| REAL:n                	{: RESULT = n; :}
-			   	| ALL listaExp:l CLL		{: RESULT = l; :}
-			   	;
+                | IDENT:i AC exp:idx CC		{: RESULT = p.loadArray(t.lookUp(i), idx); :}
+				| ENTERO:n              	{: RESULT = n; :}
+                | REAL:n                	{: RESULT = n; :}
+				;
 
 prePostIncrDecr   ::= incrDecrOp:op IDENT:i         {: RESULT = p.preIncrDecr(t.lookUp(i), op); :}  %prec PREINCR
 					| IDENT:i incrDecrOp:op         {: RESULT = p.postIncrDecr(t.lookUp(i), op); :}
@@ -209,12 +223,6 @@ arrayPart ::= IDENT:arr             	{: RESULT = arr; :}
 		  	| ALL listaExp:l CLL    	{: RESULT = l; :}
 			;
 
-// Operation assignment
-opAssignment  ::= IDENT:i MASEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "+", e); :}
-				| IDENT:i SUBEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "-", e); :}
-				| IDENT:i POREQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "*", e); :}
-				| IDENT:i DIVEQ exp:e			{: RESULT = p.tern(t.lookUp(i), i, "/", e); :}
-				;
 
 // SWITCH sent
 switchSent ::= SWITCH:s AP exp:e CP     {: switchVar = e; switchLabel = s; :}
